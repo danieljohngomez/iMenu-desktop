@@ -1,38 +1,19 @@
 package com.imenu.desktop.spring;
 
-import static com.github.appreciated.app.layout.entity.Section.FOOTER;
-import static com.github.appreciated.app.layout.entity.Section.HEADER;
-import static com.vaadin.flow.component.notification.Notification.Position.*;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-import org.vaadin.stefan.fullcalendar.BusinessHours;
-import org.vaadin.stefan.fullcalendar.CalendarViewImpl;
-import org.vaadin.stefan.fullcalendar.Entry;
-import org.vaadin.stefan.fullcalendar.FullCalendar;
-import org.vaadin.stefan.fullcalendar.FullCalendarBuilder;
-import org.vaadin.stefan.fullcalendar.FullCalendarScheduler;
-
 import com.github.appreciated.app.layout.behaviour.Behaviour;
 import com.github.appreciated.app.layout.builder.AppLayoutBuilder;
 import com.github.appreciated.app.layout.component.appbar.AppBarBuilder;
-import com.github.appreciated.app.layout.component.appmenu.MenuHeaderComponent;
-import com.github.appreciated.app.layout.component.appmenu.left.LeftClickableComponent;
 import com.github.appreciated.app.layout.component.appmenu.left.LeftNavigationComponent;
 import com.github.appreciated.app.layout.component.appmenu.left.builder.LeftAppMenuBuilder;
-import com.github.appreciated.app.layout.component.appmenu.left.builder.LeftSubMenuBuilder;
 import com.github.appreciated.app.layout.entity.DefaultBadgeHolder;
 import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
 import com.imenu.desktop.spring.ui.OrdersView;
+import com.imenu.desktop.spring.ui.TablesView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.select.Select;
@@ -75,7 +56,7 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
                 .withAppMenu( LeftAppMenuBuilder.get()
                         .add( new LeftNavigationComponent( "Menu" , VaadinIcon.CUTLERY, Menu.class ) )
                         .add( new LeftNavigationComponent( "Reservations" , VaadinIcon.CALENDAR_O, Reservation.class ) )
-                        .add( new LeftNavigationComponent( "Tables" , VaadinIcon.TABLE, Tables.class ) )
+                        .add( new LeftNavigationComponent( "Tables" , VaadinIcon.SAFE, TablesView.class ) )
                         .add( new LeftNavigationComponent( "Customers" , VaadinIcon.USERS, Customers.class ) )
                         .add( new LeftNavigationComponent( "Orders" , VaadinIcon.CLIPBOARD, OrdersView.class ) )
                         .build() )
@@ -95,14 +76,6 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
 
         public Reservation() {
             add( new ReservationsCalendar() );
-        }
-    }
-
-    @Route( value = "tables", layout = MyAppLayoutRouterLayout.class )
-    public static class Tables extends VerticalLayout {
-
-        public Tables() {
-            // Add the content for this path
         }
     }
 

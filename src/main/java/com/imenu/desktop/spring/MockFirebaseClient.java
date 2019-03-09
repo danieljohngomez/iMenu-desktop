@@ -1,10 +1,13 @@
 package com.imenu.desktop.spring;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.imenu.desktop.spring.Table.Status;
 
+//@Component
 class MockFirebaseClient implements FirebaseClient {
 
     private List<Menu> menu;
@@ -33,6 +36,17 @@ class MockFirebaseClient implements FirebaseClient {
         return getCategories( "" ).stream()
                 .flatMap( category -> category.getItems().stream() )
                 .collect( Collectors.toList() );
+    }
+
+    @Override
+    public List<Table> getTables() {
+        Table table1 = new Table( "16", Status.OCCUPIED, ImmutableList.of(
+            new FoodOrder( "Coffee", 100, 5 ),
+            new FoodOrder( "Milk Tea", 120, 3 )
+        ) );
+
+        Table table2 = new Table( "17", Status.VACANT, new ArrayList<>() );
+        return ImmutableList.of( table1, table2 );
     }
 
 }

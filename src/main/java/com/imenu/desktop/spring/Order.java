@@ -1,9 +1,8 @@
 package com.imenu.desktop.spring;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Order {
 
@@ -15,14 +14,14 @@ public class Order {
 
     private String table;
 
-    private Map<Food, Integer> foods;
+    private List<FoodOrder> foods;
 
     public Order( String id ) {
         this.id = id;
-        this.foods = new HashMap<>();
+        this.foods = new ArrayList<>();
     }
 
-    public Order( String id, LocalDateTime time, String customer, String table, Map<Food, Integer> foods ) {
+    public Order( String id, LocalDateTime time, String customer, String table, List<FoodOrder> foods ) {
         this( id );
         this.time = time;
         this.customer = customer;
@@ -56,8 +55,8 @@ public class Order {
 
     public double getTotal() {
         double sum = 0;
-        for ( Entry<Food, Integer> entry : foods.entrySet() ) {
-            double foodTotal = entry.getKey().getPrice() * entry.getValue();
+        for ( FoodOrder food : foods ) {
+            double foodTotal = food.getPrice() * food.getQuantity();
             sum += foodTotal;
         }
         return sum;
@@ -71,8 +70,11 @@ public class Order {
         this.id = id;
     }
 
-    public Map<Food, Integer> getFoods() {
+    public List<FoodOrder> getFoods() {
         return foods;
     }
 
+    public void setFoods( List<FoodOrder> foods ) {
+        this.foods = foods;
+    }
 }
