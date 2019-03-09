@@ -12,4 +12,6 @@ public interface FirebaseClient {
 
     List<Table> getTables();
 
+    List<Order> getOrders();
+
 }

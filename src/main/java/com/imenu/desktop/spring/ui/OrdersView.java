@@ -25,12 +25,6 @@ public class OrdersView extends VerticalLayout {
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "MMMM dd, YYYY hh:mm a" );
 
     public OrdersView( FirebaseClient client ) {
-        List<Order> orders = ImmutableList.of(
-                new Order( "123456", LocalDateTime.now(), "John Doe", "1",
-                        client.getTables().get( 0 ).getOrders()
-                )
-        );
-
         grid.setHeightByRows( true );
         grid.addColumn( ( ValueProvider<Order, String> ) order -> order.getTime().format( dateTimeFormatter ) )
                 .setHeader( "Date and Time" );
@@ -41,7 +35,7 @@ public class OrdersView extends VerticalLayout {
             return new Button( content, e -> openBillDialog( order ) );
         } ).setHeader( "Bill" );
         grid.addItemDoubleClickListener( e -> openBillDialog( e.getItem() ) );
-        grid.setItems( orders );
+        grid.setItems( client.getOrders() );
         add( grid );
     }
 

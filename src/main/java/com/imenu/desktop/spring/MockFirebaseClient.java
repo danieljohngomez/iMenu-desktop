@@ -1,5 +1,6 @@
 package com.imenu.desktop.spring;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,6 +48,15 @@ class MockFirebaseClient implements FirebaseClient {
 
         Table table2 = new Table( "17", Status.VACANT, new ArrayList<>() );
         return ImmutableList.of( table1, table2 );
+    }
+
+    @Override
+    public List<Order> getOrders() {
+        return ImmutableList.of(
+                new Order( "123456", LocalDateTime.now(), "John Doe", "1",
+                        getTables().get( 0 ).getOrders()
+                )
+        );
     }
 
 }

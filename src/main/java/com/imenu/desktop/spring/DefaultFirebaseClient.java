@@ -2,23 +2,20 @@ package com.imenu.desktop.spring;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.springframework.stereotype.Component;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.EventListener;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.FirestoreException;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
@@ -80,21 +77,36 @@ final class DefaultFirebaseClient implements FirebaseClient {
         return Collections.emptyList();
     }
 
+    @Override
+    public List<Order> getOrders() {
+        try {
+            return FirestoreClient.getFirestore().collection( "orders" ).get().get().getDocuments().stream()
+                    .map( this::toOrder )
+                    .collect( Collectors.toList() );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
+
     Table toTable( DocumentSnapshot doc ) {
         String name = doc.getString( "name" );
         Status status = Status.valueOf( doc.getString( "status" ).toUpperCase() );
         List<Map<String, Object>> docOrders = ( List<Map<String, Object>> ) doc.get( "orders" );
-        List<FoodOrder> foodOrders = new ArrayList<>();
-        for ( Map<String, Object> order : docOrders ) {
-            String orderName = "" + order.getOrDefault( "name", "" );
-            double orderPrice = Double.parseDouble( "" + order.getOrDefault( "price", "0" ) );
-            int orderQuantity = Integer.parseInt( "" + order.getOrDefault( "quantity", "0" ) );
-            FoodOrder foodOrder = new FoodOrder( orderName, orderPrice, orderQuantity );
-            foodOrders.add( foodOrder );
-        }
+        List<FoodOrder> foodOrders = docOrders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
         Table table = new Table( name, status, foodOrders );
         table.setId( doc.getId() );
         return table;
+    }
+
+    Order toOrder( DocumentSnapshot doc ) {
+        String id = doc.getId();
+        LocalDateTime time = (( Date )doc.get( "time" )).toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime();
+        String customerId = doc.getString("customerId"); // TODO cutomer name
+        String tableName = doc.getString( "tableName" );
+        List<Map<String, Object>> orders = ( List<Map<String, Object>> ) doc.get( "orders" );
+        List<FoodOrder> foodOrders = orders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
+        return new Order( id, time, customerId, tableName, foodOrders );
     }
 
     void updateTable(Table table, DocumentSnapshot doc) {
@@ -103,6 +115,13 @@ final class DefaultFirebaseClient implements FirebaseClient {
         table.setName( updated.getName() );
         table.setOrders( updated.getOrders() );
         table.setStatus( updated.getStatus() );
+    }
+
+    FoodOrder toFoodOrder(Map<String, Object> data) {
+        String orderName = "" + data.getOrDefault( "name", "" );
+        double orderPrice = Double.parseDouble( "" + data.getOrDefault( "price", "0" ) );
+        int orderQuantity = Integer.parseInt( "" + data.getOrDefault( "quantity", "0" ) );
+        return new FoodOrder( orderName, orderPrice, orderQuantity );
     }
 
 }

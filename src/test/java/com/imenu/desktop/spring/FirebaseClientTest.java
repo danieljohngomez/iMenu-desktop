@@ -1,9 +1,10 @@
 package com.imenu.desktop.spring;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -13,12 +14,12 @@ import java.util.stream.Collectors;
 import org.testng.annotations.Test;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
 import com.google.firebase.cloud.FirestoreClient;
-import com.imenu.desktop.spring.Table.Status;
 
 public class FirebaseClientTest {
 
@@ -32,8 +33,8 @@ public class FirebaseClientTest {
 
         FirebaseApp.initializeApp( options );
         try {
-            FirestoreClient.getFirestore().collection("tables").get().get().getDocuments().stream()
-                    .map( d -> toTable( d ) )
+            FirestoreClient.getFirestore().collection("orders").get().get().getDocuments().stream()
+                    .map( d -> toOrder( d ) )
             .collect( Collectors.toList() );
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
@@ -41,21 +42,21 @@ public class FirebaseClientTest {
         new Scanner( System.in ).nextLine();
     }
 
-    Table toTable(QueryDocumentSnapshot doc) {
-        String name = doc.getString( "name" );
-        Status status = Status.valueOf( doc.getString( "status" ).toUpperCase() );
-        List<Map<String, Object>> docOrders = ( List<Map<String, Object>> ) doc.get( "orders" );
-        List<FoodOrder> foodOrders = new ArrayList<>();
-        for ( Map<String, Object> order : docOrders ) {
-            String orderName = "" + order.getOrDefault( "name", "" );
-            double orderPrice = Double.parseDouble( "" + order.getOrDefault( "price", "0" ) );
-            int orderQuantity = Integer.parseInt( "" + order.getOrDefault( "quantity", "0" ) );
-            FoodOrder foodOrder = new FoodOrder( orderName, orderPrice, orderQuantity );
-            foodOrders.add( foodOrder );
-        }
-        Table table = new Table( name, status, foodOrders );
-        return table;
+    Order toOrder( DocumentSnapshot doc ) {
+        String id = doc.getId();
+        LocalDateTime time = ((Date)doc.get( "time" )).toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime();
+        String customerId = doc.getId();
+        String tableName = doc.getString( "tableName" );
+        List<Map<String, Object>> orders = ( List<Map<String, Object>> ) doc.get( "orders" );
+        List<FoodOrder> foodOrders = orders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
+        return new Order( id, time, customerId, tableName, foodOrders );
     }
 
+    FoodOrder toFoodOrder( Map<String, Object> data) {
+        String orderName = "" + data.getOrDefault( "name", "" );
+        double orderPrice = Double.parseDouble( "" + data.getOrDefault( "price", "0" ) );
+        int orderQuantity = Integer.parseInt( "" + data.getOrDefault( "quantity", "0" ) );
+        return new FoodOrder( orderName, orderPrice, orderQuantity );
+    }
 
 }

@@ -43,11 +43,12 @@ public class BillDialog extends Dialog {
 
         Grid<FoodOrder> grid = new Grid<>();
         grid.getStyle().set( "margin-top", "20px" );
-        grid.setWidth( "300px" );
+        grid.setWidth( "500px" );
         grid.setHeightByRows( true );
         grid.setSelectionMode( SelectionMode.NONE );
 
-        grid.addColumn( FoodOrder::getName ).setHeader( "Name" ).setTextAlign( ColumnTextAlign.CENTER );
+        grid.addColumn( FoodOrder::getName ).setHeader( "Name" ).setTextAlign( ColumnTextAlign.CENTER )
+                .setWidth( "300px" );
         grid.addColumn( ( ValueProvider<FoodOrder, String> ) food -> String.format( "%.2f", food.getPrice() ) )
                 .setHeader( "Price" )
                 .setTextAlign( ColumnTextAlign.CENTER );
