@@ -47,7 +47,6 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.binder.Binder;
@@ -67,16 +66,15 @@ public class ReservationsCalendar extends Div {
 
         add( new Hr() );
 
-        createCalendarInstance();
+        calendar = createCalendar();
+        calendar.setHeightByParent();
+        calendar.getElement().getStyle().set( "flex-grow", "1" );
+        calendar.setSizeFull();
         add( calendar );
 
         setSizeFull();
-        calendar.setHeightByParent();
-        setFlexStyles( true );
-
-        addReservation( new Reservation( "10", LocalDateTime.now().minusDays( 1 ),
-                LocalDateTime.now().minusDays( 1 )
-                        .plusMinutes( 30 ), "Daniel Gomez" ) );
+        getElement().getStyle().set( "display", "flex" );
+        getElement().getStyle().set( "flex-direction", "column" );
     }
 
     private Component createToolbar() {
@@ -136,20 +134,8 @@ public class ReservationsCalendar extends Div {
         return toolbar;
     }
 
-    private void setFlexStyles( boolean flexStyles ) {
-        if ( flexStyles ) {
-            calendar.getElement().getStyle().set( "flex-grow", "1" );
-            getElement().getStyle().set( "display", "flex" );
-            getElement().getStyle().set( "flex-direction", "column" );
-        } else {
-            calendar.getElement().getStyle().remove( "flex-grow" );
-            getElement().getStyle().remove( "display" );
-            getElement().getStyle().remove( "flex-direction" );
-        }
-    }
-
-    private void createCalendarInstance() {
-        calendar = new MyFullCalendarScheduler();
+    private FullCalendarScheduler createCalendar() {
+        MyFullCalendarScheduler calendar = new MyFullCalendarScheduler();
         calendar.changeView( AGENDA_DAY );
         calendar.setNowIndicatorShown( true );
         calendar.setNumberClickable( true );
@@ -157,7 +143,7 @@ public class ReservationsCalendar extends Div {
 
         ( ( Scheduler ) calendar ).setSchedulerLicenseKey( Scheduler.GPL_V3_LICENSE_KEY );
 
-        calendar.addEntryClickedListener( event -> new DemoDialog( calendar, event.getEntry(), false ).open() );
+        calendar.addEntryClickedListener( event -> new EntryDialog( calendar, event.getEntry(), false ).open() );
         calendar.addEntryResizedListener( event -> {
             event.applyChangesOnEntry();
 
@@ -193,13 +179,11 @@ public class ReservationsCalendar extends Div {
 
             entry.setStart( calendar.getTimezone().convertToUTC( event.getStartDateTime() ) );
             entry.setEnd( calendar.getTimezone().convertToUTC( event.getEndDateTime() ) );
-            entry.setAllDay( event.isAllDay() );
-            Optional<Resource> resource = event.getResource();
 
             entry.setColor( "dodgerblue" );
-            new DemoDialog( calendar, entry, true ).open();
+            new EntryDialog( calendar, entry, true ).open();
         } );
-
+        
         calendar.addLimitedEntriesClickedListener( event -> {
             Collection<Entry> entries = calendar.getEntries( event.getClickedDate() );
             if ( !entries.isEmpty() ) {
@@ -215,7 +199,7 @@ public class ReservationsCalendar extends Div {
                         .sorted( Comparator.comparing( Entry::getTitle ) )
                         .map( entry -> {
                             NativeButton button = new NativeButton( entry.getTitle(),
-                                    clickEvent -> new DemoDialog( calendar, entry, false ).open() );
+                                    clickEvent -> new EntryDialog( calendar, entry, false ).open() );
                             Style style = button.getStyle();
                             style.set( "background-color",
                                     Optional.ofNullable( entry.getColor() ).orElse( "rgb(58, 135, 173)" ) );
@@ -241,30 +225,7 @@ public class ReservationsCalendar extends Div {
             calendar.gotoDate( event.getDateTime().toLocalDate() );
         } );
 
-        calendar.setSizeFull();
-        createEntries();
-    }
-
-    private void createEntries() {
-        Scheduler scheduler = ( Scheduler ) calendar;
-
-        Resource resource = new Resource( "1", "Table 1", null );
-        scheduler.addResource( resource );
-        LocalDateTime start = LocalDateTime.now();
-        LocalDateTime end = start.plusMinutes( 30 );
-        ResourceEntry entry = new ResourceEntry( "1", "John Doe", start, end, calendar.getTimezone(),
-                false, true, null, "Description" );
-        entry.addResources( ImmutableList.of( resource ) );
-
-        Resource resource2 = new Resource( "2", "Table 2", "#000" );
-        scheduler.addResource( resource2 );
-        LocalDateTime start2 = start.minusHours( 2 );
-        LocalDateTime end2 = end.minusHours( 2 );
-        ResourceEntry entry2 = new ResourceEntry( "2", "Jane Doe", start2, end2,
-                calendar.getTimezone(), false, true, null, "Description" );
-        entry2.addResources( ImmutableList.of( resource2 ) );
-
-        calendar.addEntries( entry, entry2 );
+        return calendar;
     }
 
     private void addReservation( Reservation reservation ) {
@@ -316,9 +277,9 @@ public class ReservationsCalendar extends Div {
         intervalLabel.setText( text );
     }
 
-    public static class DemoDialog extends Dialog {
+    public static class EntryDialog extends Dialog {
 
-        DemoDialog( FullCalendar calendar, Entry entry, boolean newInstance ) {
+        EntryDialog( FullCalendar calendar, Entry entry, boolean newInstance ) {
             setCloseOnEsc( true );
             setCloseOnOutsideClick( true );
 
@@ -329,21 +290,18 @@ public class ReservationsCalendar extends Div {
             TextField fieldTitle = new TextField( "Title" );
             fieldTitle.focus();
 
-            TextArea fieldDescription = new TextArea( "Description" );
             TimePicker fieldStart = new TimePicker( "Start" );
             TimePicker fieldEnd = new TimePicker( "End" );
 
             fieldStart.setValue( entry.getStart().toLocalTime() );
             fieldEnd.setValue( entry.getEnd().toLocalTime() );
 
-            layout.add( fieldTitle, fieldDescription, fieldStart, fieldEnd );
+            layout.add( fieldTitle, fieldStart, fieldEnd );
 
             Binder<Entry> binder = new Binder<>( Entry.class );
             binder.forField( fieldTitle )
                     .asRequired()
                     .bind( Entry::getTitle, Entry::setTitle );
-
-            binder.bind( fieldDescription, Entry::getDescription, Entry::setDescription );
             binder.setBean( entry );
 
             HorizontalLayout buttons = new HorizontalLayout();
