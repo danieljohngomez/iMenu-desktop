@@ -52,8 +52,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.dom.ThemeList;
+import com.vaadin.flow.function.ValueProvider;
 
 public class ReservationsCalendar extends Div {
 
@@ -66,6 +68,8 @@ public class ReservationsCalendar extends Div {
     private FirebaseClient client;
 
     private List<Resource> resources = new ArrayList<>();
+
+    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern( "h:mm a" );
 
     public ReservationsCalendar( FirebaseClient client ) {
         this.client = client;
@@ -178,6 +182,8 @@ public class ReservationsCalendar extends Div {
             entry.setEnd( event.getDelta().applyOn( entry.getEnd() ) );
 
             client.upsertReservation( entry.getReservation() );
+            calendar.removeEntry( entry );
+            calendar.addEntry( entry );
         } );
         calendar.addViewRenderedListener(
                 event -> updateIntervalLabel( buttonDatePicker, calendarViews.getValue(), event.getIntervalStart() ) );
@@ -246,7 +252,8 @@ public class ReservationsCalendar extends Div {
                 } );
         LocalDateTime start = reservation.getStart();
         LocalDateTime end = reservation.getEnd();
-        ReservationEntry entry = new ReservationEntry( reservation.getId(), reservation.getCustomer(), start, end,
+        String title =  end.format( timeFormatter ) + ": " + reservation.getCustomer();
+        ReservationEntry entry = new ReservationEntry( reservation.getId(), title, start, end,
                 calendar.getTimezone(), false, true, null, "", reservation );
         entry.addResources( ImmutableList.of( resource ) );
         calendar.addEntry( entry );
@@ -312,10 +319,11 @@ public class ReservationsCalendar extends Div {
 
             layout.add( fieldTitle, fieldStart, fieldEnd );
 
-            Binder<Entry> binder = new Binder<>( Entry.class );
+            Binder<ReservationEntry> binder = new Binder<>( ReservationEntry.class );
             binder.forField( fieldTitle )
                     .asRequired()
-                    .bind( Entry::getTitle, Entry::setTitle );
+                    .bind( ( ValueProvider<ReservationEntry, String> ) reservationEntry -> reservationEntry.getReservation().getCustomer(),
+                            ( Setter<ReservationEntry, String> ) ReservationEntry::setCustomer );
             binder.setBean( entry );
 
             HorizontalLayout buttons = new HorizontalLayout();
@@ -382,7 +390,7 @@ public class ReservationsCalendar extends Div {
 
     }
 
-    public static class ReservationEntry extends ResourceEntry {
+    public class ReservationEntry extends ResourceEntry {
         private Reservation reservation;
 
         public ReservationEntry( ReservationEntry entry ) {
@@ -434,6 +442,7 @@ public class ReservationsCalendar extends Div {
         public void setEnd( LocalDateTime end ) {
             super.setEnd( end );
             getReservation().setEnd( end );
+            updateTitle();
         }
 
         public void setReservation( Reservation reservation ) {
@@ -441,6 +450,17 @@ public class ReservationsCalendar extends Div {
             setStart( reservation.getStart() );
             setEnd( reservation.getEnd() );
         }
+
+        void updateTitle() {
+            String title =  getEnd().format( timeFormatter ) + ": " + reservation.getCustomer();
+            setTitle( title );
+        }
+
+        void setCustomer(String customer) {
+            getReservation().setCustomer( customer );
+            updateTitle();
+        }
+
     }
 
 }
