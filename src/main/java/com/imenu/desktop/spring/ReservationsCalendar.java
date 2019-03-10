@@ -1,9 +1,15 @@
 package com.imenu.desktop.spring;
 
+import static org.vaadin.stefan.fullcalendar.CalendarViewImpl.AGENDA_DAY;
+import static org.vaadin.stefan.fullcalendar.CalendarViewImpl.BASIC_DAY;
+import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_DAY;
+import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_MONTH;
+import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_WEEK;
+import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_YEAR;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,8 +30,10 @@ import org.vaadin.stefan.fullcalendar.Scheduler;
 import org.vaadin.stefan.fullcalendar.SchedulerView;
 import org.vaadin.stefan.fullcalendar.TimeslotsSelectedSchedulerEvent;
 
+import com.google.common.collect.ImmutableList;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasText;
+import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -46,9 +54,6 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.dom.ThemeList;
 
-//@Route( value = "reservations", layout = MyAppLayoutRouterLayout.class )
-//@HtmlImport("frontend://styles.html")
-//@HtmlImport("frontend://styles_scheduler.html")
 public class ReservationsCalendar extends Div {
 
     private FullCalendar calendar;
@@ -66,8 +71,12 @@ public class ReservationsCalendar extends Div {
         add( calendar );
 
         setSizeFull();
-        //calendar.setHeightByParent();
+        calendar.setHeightByParent();
         setFlexStyles( true );
+
+        addReservation( new Reservation( "10", LocalDateTime.now().minusDays( 1 ),
+                LocalDateTime.now().minusDays( 1 )
+                        .plusMinutes( 30 ), "Daniel Gomez" ) );
     }
 
     private Component createToolbar() {
@@ -77,14 +86,37 @@ public class ReservationsCalendar extends Div {
         buttonNext.setIconAfterText( true );
 
         List<CalendarView> calendarViews = new ArrayList<>();
-        calendarViews.addAll( Arrays.asList( CalendarViewImpl.values() ) );
+        calendarViews.addAll( Arrays.asList( AGENDA_DAY, BASIC_DAY ) );
         calendarViews.addAll( Arrays.asList( SchedulerView.values() ) );
         this.calendarViews = new ComboBox<>( "", calendarViews );
-        this.calendarViews.setValue( CalendarViewImpl.AGENDA_DAY );
+        this.calendarViews.setAllowCustomValue( false );
         this.calendarViews.addValueChangeListener( e -> {
-            CalendarView value = e.getValue();
-            calendar.changeView( value == null ? CalendarViewImpl.AGENDA_DAY : value );
+            if ( calendar != null ) {
+                CalendarView value = e.getValue();
+                calendar.changeView( value == null ? AGENDA_DAY : value );
+            }
         } );
+        this.calendarViews.setWidth( "250px" );
+        this.calendarViews.setItemLabelGenerator( new ItemLabelGenerator<CalendarView>() {
+            @Override
+            public String apply( CalendarView calendarView ) {
+                String label = "";
+                if ( calendarView.equals( AGENDA_DAY ) )
+                    label = "Agenda (Today)";
+                else if ( calendarView.equals( BASIC_DAY ) )
+                    label = "Basic (Today)";
+                else if ( calendarView.equals( TIMELINE_DAY ) )
+                    label = "Timeline (Today)";
+                else if ( calendarView.equals( TIMELINE_WEEK ) )
+                    label = "Timeline (This Week)";
+                else if ( calendarView.equals( TIMELINE_MONTH ) )
+                    label = "Timeline (This Month)";
+                else if ( calendarView.equals( TIMELINE_YEAR ) )
+                    label = "Timeline (This Year)";
+                return label;
+            }
+        } );
+        this.calendarViews.setValue( AGENDA_DAY );
 
         // simulate the date picker light that we can use in polymer
         DatePicker gotoDate = new DatePicker();
@@ -118,7 +150,7 @@ public class ReservationsCalendar extends Div {
 
     private void createCalendarInstance() {
         calendar = new MyFullCalendarScheduler();
-        calendar.changeView( CalendarViewImpl.AGENDA_DAY );
+        calendar.changeView( AGENDA_DAY );
         calendar.setNowIndicatorShown( true );
         calendar.setNumberClickable( true );
         calendar.setTimeslotsSelectable( true );
@@ -163,7 +195,6 @@ public class ReservationsCalendar extends Div {
             entry.setEnd( calendar.getTimezone().convertToUTC( event.getEndDateTime() ) );
             entry.setAllDay( event.isAllDay() );
             Optional<Resource> resource = event.getResource();
-            System.out.println( resource );
 
             entry.setColor( "dodgerblue" );
             new DemoDialog( calendar, entry, true ).open();
@@ -210,115 +241,42 @@ public class ReservationsCalendar extends Div {
             calendar.gotoDate( event.getDateTime().toLocalDate() );
         } );
 
-        createTestEntries( calendar );
+        calendar.setSizeFull();
+        createEntries();
     }
 
-    private void createTestEntries( FullCalendar calendar ) {
-        LocalDate now = LocalDate.now();
+    private void createEntries() {
+        Scheduler scheduler = ( Scheduler ) calendar;
 
-        Resource table1 = createResource( ( Scheduler ) calendar, "Table #1", "red" );
-        Resource table2 = createResource( ( Scheduler ) calendar, "Table #2", "green" );
-        Resource table3 = createResource( ( Scheduler ) calendar, "Table #3", "blue" );
+        Resource resource = new Resource( "1", "Table 1", null );
+        scheduler.addResource( resource );
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime end = start.plusMinutes( 30 );
+        ResourceEntry entry = new ResourceEntry( "1", "John Doe", start, end, calendar.getTimezone(),
+                false, true, null, "Description" );
+        entry.addResources( ImmutableList.of( resource ) );
 
-        createTimedEntry( calendar, "Kickoff meeting with customer #1", now.withDayOfMonth( 3 ).atTime( 10, 0 ), 120,
-                null, table3, table2, table1 );
-        createTimedBackgroundEntry( calendar, now.withDayOfMonth( 3 ).atTime( 10, 0 ), 120, null, table3,
-                table2, table1 );
-        createTimedEntry( calendar, "Kickoff meeting with customer #2", now.withDayOfMonth( 7 ).atTime( 11, 30 ), 120,
-                "mediumseagreen", table1 );
-        createTimedEntry( calendar, "Kickoff meeting with customer #3", now.withDayOfMonth( 12 ).atTime( 9, 0 ), 120,
-                "mediumseagreen", table2 );
-        createTimedEntry( calendar, "Kickoff meeting with customer #4", now.withDayOfMonth( 13 ).atTime( 10, 0 ), 120,
-                "mediumseagreen", table2 );
-        createTimedEntry( calendar, "Kickoff meeting with customer #5", now.withDayOfMonth( 17 ).atTime( 11, 30 ), 120,
-                "mediumseagreen", table3 );
-        createTimedEntry( calendar, "Kickoff meeting with customer #6", now.withDayOfMonth( 22 ).atTime( 9, 0 ), 120,
-                "mediumseagreen", table1 );
+        Resource resource2 = new Resource( "2", "Table 2", "#000" );
+        scheduler.addResource( resource2 );
+        LocalDateTime start2 = start.minusHours( 2 );
+        LocalDateTime end2 = end.minusHours( 2 );
+        ResourceEntry entry2 = new ResourceEntry( "2", "Jane Doe", start2, end2,
+                calendar.getTimezone(), false, true, null, "Description" );
+        entry2.addResources( ImmutableList.of( resource2 ) );
 
-        createTimedEntry( calendar, "Grocery Store", now.withDayOfMonth( 7 ).atTime( 17, 30 ), 45, "violet" );
-        createTimedEntry( calendar, "Dentist", now.withDayOfMonth( 20 ).atTime( 11, 30 ), 60, "violet" );
-        createTimedEntry( calendar, "Cinema", now.withDayOfMonth( 10 ).atTime( 20, 30 ), 140, "dodgerblue" );
-        createDayEntry( calendar, "Short trip", now.withDayOfMonth( 17 ), 2, "dodgerblue" );
-        createDayEntry( calendar, "John's Birthday", now.withDayOfMonth( 23 ), 1, "gray" );
-        createDayEntry( calendar, "This special holiday", now.withDayOfMonth( 4 ), 1, "gray" );
-
-        createDayEntry( calendar, "Multi 1", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 2", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 3", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 4", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 5", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 6", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 7", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 8", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 9", now.withDayOfMonth( 12 ), 2, "tomato" );
-        createDayEntry( calendar, "Multi 10", now.withDayOfMonth( 12 ), 2, "tomato" );
-
-        createDayBackgroundEntry( calendar, now.withDayOfMonth( 4 ), 6, "#B9FFC3" );
-        createDayBackgroundEntry( calendar, now.withDayOfMonth( 19 ), 2, "#CEE3FF" );
-        createTimedBackgroundEntry( calendar, now.withDayOfMonth( 20 ).atTime( 11, 0 ), 150, "#FBC8FF" );
+        calendar.addEntries( entry, entry2 );
     }
 
-    private Resource createResource( Scheduler calendar, String s, String color ) {
-        Resource resource = new Resource( null, s, color );
-        calendar.addResource( resource );
-        return resource;
-    }
-
-    private void createDayEntry( FullCalendar calendar, String title, LocalDate start, int days, String color ) {
-        ResourceEntry entry = new ResourceEntry();
-        setValues( calendar, entry, title, start.atStartOfDay(), days, ChronoUnit.DAYS, color );
+    private void addReservation( Reservation reservation ) {
+        Scheduler scheduler = ( Scheduler ) calendar;
+        Resource resource = new Resource( reservation.getId(), "Table " + reservation.getTable(), null );
+        scheduler.addResource( resource );
+        LocalDateTime start = reservation.getStart();
+        LocalDateTime end = reservation.getEnd();
+        ResourceEntry entry = new ResourceEntry( reservation.getId(), reservation.getCustomer(), start, end,
+                calendar.getTimezone(), false, true, null, "" );
+        entry.addResources( ImmutableList.of( resource ) );
         calendar.addEntry( entry );
-    }
-
-    private void createTimedEntry( FullCalendar calendar, String title, LocalDateTime start, int minutes,
-            String color ) {
-        createTimedEntry( calendar, title, start, minutes, color, ( Resource[] ) null );
-    }
-
-    private void createTimedEntry( FullCalendar calendar, String title, LocalDateTime start, int minutes, String color,
-            Resource... resources ) {
-        ResourceEntry entry = new ResourceEntry();
-        setValues( calendar, entry, title, start, minutes, ChronoUnit.MINUTES, color );
-        if ( resources != null && resources.length > 0 ) {
-            entry.addResources( Arrays.asList( resources ) );
-        }
-        calendar.addEntry( entry );
-    }
-
-    private void createDayBackgroundEntry( FullCalendar calendar, LocalDate start, int days, String color ) {
-        ResourceEntry entry = new ResourceEntry();
-        setValues( calendar, entry, "BG", start.atStartOfDay(), days, ChronoUnit.DAYS, color );
-
-        entry.setRenderingMode( Entry.RenderingMode.BACKGROUND );
-        calendar.addEntry( entry );
-    }
-
-    private void createTimedBackgroundEntry( FullCalendar calendar, LocalDateTime start, int minutes, String color ) {
-        ResourceEntry entry = new ResourceEntry();
-        setValues( calendar, entry, "BG", start, minutes, ChronoUnit.MINUTES, color );
-
-        entry.setRenderingMode( Entry.RenderingMode.BACKGROUND );
-        calendar.addEntry( entry );
-    }
-
-    private void createTimedBackgroundEntry( FullCalendar calendar, LocalDateTime start, int minutes, String color,
-            Resource... resources ) {
-        ResourceEntry entry = new ResourceEntry();
-        setValues( calendar, entry, "BG", start, minutes, ChronoUnit.MINUTES, color );
-        entry.setRenderingMode( Entry.RenderingMode.BACKGROUND );
-        if ( resources != null && resources.length > 0 ) {
-            entry.addResources( Arrays.asList( resources ) );
-        }
-        calendar.addEntry( entry );
-    }
-
-    private void setValues( FullCalendar calendar, ResourceEntry entry, String title, LocalDateTime start,
-            int amountToAdd, ChronoUnit unit, String color ) {
-        entry.setTitle( title );
-        entry.setStart( start, calendar.getTimezone() );
-        entry.setEnd( entry.getStartUTC().plus( amountToAdd, unit ) );
-        entry.setAllDay( unit == ChronoUnit.DAYS );
-        entry.setColor( color );
     }
 
     private void updateIntervalLabel( HasText intervalLabel, CalendarView view, LocalDate intervalStart ) {
@@ -332,38 +290,25 @@ public class ReservationsCalendar extends Div {
                 default:
                 case AGENDA_DAY:
                 case BASIC_DAY:
-                case LIST_DAY:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "dd.MM.yyyy" ).withLocale( locale ) );
-                    break;
-                case AGENDA_WEEK:
-                case BASIC_WEEK:
-                case LIST_WEEK:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "dd.MM.yy" ).withLocale( locale ) )
-                            + " - " + intervalStart.plusDays( 6 ).format(
-                            DateTimeFormatter.ofPattern( "dd.MM.yy" ).withLocale( locale ) ) + " (cw "
-                            + intervalStart.format( DateTimeFormatter.ofPattern( "ww" ).withLocale( locale ) ) + ")";
-                    break;
-                case LIST_YEAR:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "yyyy" ).withLocale( locale ) );
+                    text = intervalStart.format( DateTimeFormatter.ofPattern( "MMMM dd, YYYY" ).withLocale( locale ) );
                     break;
             }
         } else if ( view instanceof SchedulerView ) {
             switch ( ( SchedulerView ) view ) {
                 default:
                 case TIMELINE_MONTH:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "MMMM yyyy" ).withLocale( locale ) );
+                    text = intervalStart.format( DateTimeFormatter.ofPattern( "MMMM YYYY" ).withLocale( locale ) );
                     break;
                 case TIMELINE_DAY:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "dd.MM.yyyy" ).withLocale( locale ) );
+                    text = intervalStart.format( DateTimeFormatter.ofPattern( "MMMM dd, YYYY" ).withLocale( locale ) );
                     break;
                 case TIMELINE_WEEK:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "dd.MM.yy" ).withLocale( locale ) )
+                    text = intervalStart.format( DateTimeFormatter.ofPattern( "MMMM dd, YYYY" ).withLocale( locale ) )
                             + " - " + intervalStart.plusDays( 6 ).format(
-                            DateTimeFormatter.ofPattern( "dd.MM.yy" ).withLocale( locale ) ) + " (cw "
-                            + intervalStart.format( DateTimeFormatter.ofPattern( "ww" ).withLocale( locale ) ) + ")";
+                            DateTimeFormatter.ofPattern( "MMMM dd, YYYY" ).withLocale( locale ) );
                     break;
                 case TIMELINE_YEAR:
-                    text = intervalStart.format( DateTimeFormatter.ofPattern( "yyyy" ).withLocale( locale ) );
+                    text = intervalStart.format( DateTimeFormatter.ofPattern( "YYYY" ).withLocale( locale ) );
                     break;
             }
         }
@@ -435,9 +380,6 @@ public class ReservationsCalendar extends Div {
         public MyFullCalendarScheduler() {
         }
 
-        public MyFullCalendarScheduler( int entryLimit ) {
-            super( entryLimit );
-        }
     }
 
 }

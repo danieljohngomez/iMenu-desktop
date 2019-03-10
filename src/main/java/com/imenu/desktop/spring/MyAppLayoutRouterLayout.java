@@ -55,7 +55,7 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
                         .build() )
                 .withAppMenu( LeftAppMenuBuilder.get()
                         .add( new LeftNavigationComponent( "Menu" , VaadinIcon.CUTLERY, Menu.class ) )
-                        .add( new LeftNavigationComponent( "Reservations" , VaadinIcon.CALENDAR_O, Reservation.class ) )
+                        .add( new LeftNavigationComponent( "Reservations" , VaadinIcon.CALENDAR_O, ReservationView.class ) )
                         .add( new LeftNavigationComponent( "Tables" , VaadinIcon.SAFE, TablesView.class ) )
                         .add( new LeftNavigationComponent( "Customers" , VaadinIcon.USERS, Customers.class ) )
                         .add( new LeftNavigationComponent( "Orders" , VaadinIcon.CLIPBOARD, OrdersView.class ) )
@@ -68,14 +68,6 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
 
         public Menu() {
             // Add the content for this path
-        }
-    }
-
-    @Route( value = "reservations", layout = MyAppLayoutRouterLayout.class )
-    public static class Reservation extends VerticalLayout {
-
-        public Reservation() {
-            add( new ReservationsCalendar() );
         }
     }
 
