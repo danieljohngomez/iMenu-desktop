@@ -7,6 +7,7 @@ import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_MONTH;
 import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_WEEK;
 import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_YEAR;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +20,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.tomcat.jni.Local;
 import org.vaadin.stefan.fullcalendar.CalendarView;
 import org.vaadin.stefan.fullcalendar.CalendarViewImpl;
 import org.vaadin.stefan.fullcalendar.Entry;
@@ -75,6 +77,8 @@ public class ReservationsCalendar extends Div {
         setSizeFull();
         getElement().getStyle().set( "display", "flex" );
         getElement().getStyle().set( "flex-direction", "column" );
+
+        addReservation( new Reservation( "table 1", LocalDateTime.now(), LocalDateTime.now(), "Customer 1" ) );
     }
 
     private Component createToolbar() {
@@ -143,7 +147,7 @@ public class ReservationsCalendar extends Div {
 
         ( ( Scheduler ) calendar ).setSchedulerLicenseKey( Scheduler.GPL_V3_LICENSE_KEY );
 
-        calendar.addEntryClickedListener( event -> new EntryDialog( calendar, event.getEntry(), false ).open() );
+        calendar.addEntryClickedListener( event -> new EntryDialog( calendar, ( ResourceEntry ) event.getEntry(), false ).open() );
         calendar.addEntryResizedListener( event -> {
             event.applyChangesOnEntry();
 
@@ -175,10 +179,11 @@ public class ReservationsCalendar extends Div {
                 event -> updateIntervalLabel( buttonDatePicker, calendarViews.getValue(), event.getIntervalStart() ) );
 
         calendar.addTimeslotsSelectedListener( ( TimeslotsSelectedSchedulerEvent event ) -> {
-            Entry entry = new Entry();
+            ResourceEntry entry = new ResourceEntry();
 
             entry.setStart( calendar.getTimezone().convertToUTC( event.getStartDateTime() ) );
             entry.setEnd( calendar.getTimezone().convertToUTC( event.getEndDateTime() ) );
+            event.getResource().ifPresent( resource -> entry.addResources( ImmutableList.of( resource ) ) );
 
             entry.setColor( "dodgerblue" );
             new EntryDialog( calendar, entry, true ).open();
@@ -199,7 +204,7 @@ public class ReservationsCalendar extends Div {
                         .sorted( Comparator.comparing( Entry::getTitle ) )
                         .map( entry -> {
                             NativeButton button = new NativeButton( entry.getTitle(),
-                                    clickEvent -> new EntryDialog( calendar, entry, false ).open() );
+                                    clickEvent -> new EntryDialog( calendar, ( ResourceEntry ) entry, false ).open() );
                             Style style = button.getStyle();
                             style.set( "background-color",
                                     Optional.ofNullable( entry.getColor() ).orElse( "rgb(58, 135, 173)" ) );
@@ -279,7 +284,7 @@ public class ReservationsCalendar extends Div {
 
     public static class EntryDialog extends Dialog {
 
-        EntryDialog( FullCalendar calendar, Entry entry, boolean newInstance ) {
+        EntryDialog( FullCalendar calendar, ResourceEntry entry, boolean newInstance ) {
             setCloseOnEsc( true );
             setCloseOnOutsideClick( true );
 
@@ -287,11 +292,13 @@ public class ReservationsCalendar extends Div {
             layout.setDefaultHorizontalComponentAlignment( FlexComponent.Alignment.STRETCH );
             layout.setSizeFull();
 
-            TextField fieldTitle = new TextField( "Title" );
+            TextField fieldTitle = new TextField( "Customer" );
             fieldTitle.focus();
 
             TimePicker fieldStart = new TimePicker( "Start" );
+            fieldStart.setStep( Duration.ofMinutes( 30 ) );
             TimePicker fieldEnd = new TimePicker( "End" );
+            fieldEnd.setStep( Duration.ofMinutes( 30 ) );
 
             fieldStart.setValue( entry.getStart().toLocalTime() );
             fieldEnd.setValue( entry.getEnd().toLocalTime() );
@@ -307,7 +314,10 @@ public class ReservationsCalendar extends Div {
             HorizontalLayout buttons = new HorizontalLayout();
             Button buttonSave;
             if ( newInstance ) {
-                buttonSave = new Button( "Create", e -> calendar.addEntry( entry ) );
+                buttonSave = new Button( "Create", e -> {
+                    entry.getResource().ifPresent( resource -> entry.addResources( ImmutableList.of( resource ) ) );
+                    calendar.addEntry( entry );
+                });
             } else {
                 buttonSave = new Button( "Save", e -> calendar.updateEntry( entry ) );
             }
