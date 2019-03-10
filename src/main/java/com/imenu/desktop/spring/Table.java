@@ -8,6 +8,7 @@ public class Table {
     private String id;
     private String name;
     private Status status;
+    private String customer;
     private List<FoodOrder> orders;
     private List<Consumer<Table>> onChangeListeners;
 
@@ -65,6 +66,14 @@ public class Table {
 
     public void onChange() {
         this.onChangeListeners.forEach( listener -> listener.accept( this ) );
+    }
+
+    public String getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer( String customer ) {
+        this.customer = customer;
     }
 
     public enum Status {

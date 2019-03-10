@@ -21,6 +21,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -72,6 +73,7 @@ public class TablesView extends HorizontalLayout {
             Order order = new Order( null );
             order.setTable( table.getName() );
             order.setFoods( table.getOrders() );
+            order.setCustomer( table.getCustomer() );
             BillDialog billDialog = new BillDialog( order );
             billDialog.addBillOutListener( new ComponentEventListener<ClickEvent<Button>>() {
                 @Override
@@ -79,7 +81,8 @@ public class TablesView extends HorizontalLayout {
                     order.setTime( LocalDateTime.now() );
                     client.addOrder( order );
                     client.clearOrder( table.getId() );
-                    Notification.show( "Successfully Billed Out" );
+                    Notification.show( "Successfully Billed Out", 3000, Position.MIDDLE );
+                    billDialog.close();
                 }
             } );
             billDialog.open();

@@ -107,7 +107,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
     public void clearOrder( String tableId ) {
         try {
             FirestoreClient.getFirestore().document( "tables/" + tableId )
-                    .update( "orders", new ArrayList<>() )
+                    .update( "orders", new ArrayList<>(), "customer", null )
                     .get();
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
@@ -134,10 +134,12 @@ final class DefaultFirebaseClient implements FirebaseClient {
     Table toTable( DocumentSnapshot doc ) {
         String name = doc.getString( "name" );
         Status status = Status.valueOf( doc.getString( "status" ).toUpperCase() );
+        String customer = doc.getString( "customer" );
         List<Map<String, Object>> docOrders = ( List<Map<String, Object>> ) doc.get( "orders" );
         List<FoodOrder> foodOrders = docOrders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
         Table table = new Table( name, status, foodOrders );
         table.setId( doc.getId() );
+        table.setCustomer( customer );
         return table;
     }
 
@@ -157,6 +159,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
         table.setName( updated.getName() );
         table.setOrders( updated.getOrders() );
         table.setStatus( updated.getStatus() );
+        table.setCustomer( updated.getCustomer() );
     }
 
     FoodOrder toFoodOrder(Map<String, Object> data) {
