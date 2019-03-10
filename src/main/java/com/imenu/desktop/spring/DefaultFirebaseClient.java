@@ -114,6 +114,45 @@ final class DefaultFirebaseClient implements FirebaseClient {
         }
     }
 
+    @Override
+    public List<Reservation> getReservations() {
+        try {
+            return FirestoreClient.getFirestore().collection( "reservations" ).get().get().getDocuments().stream()
+                    .map( this::toReservation )
+                    .collect( Collectors.toList() );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Reservation upsertReservation( Reservation reservation ) {
+        try {
+            if (reservation.getId() == null) {
+                DocumentSnapshot doc = FirestoreClient.getFirestore().collection( "reservations" )
+                        .add( toFirebaseModel( reservation ) ).get().get().get();
+                return toReservation( doc );
+            } else {
+                FirestoreClient.getFirestore().document( "reservations/" + reservation.getId() )
+                        .set( toFirebaseModel( reservation ) )
+                        .get();
+            }
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return reservation;
+    }
+
+    @Override
+    public void removeReservation( String id ) {
+        try {
+            FirestoreClient.getFirestore().document( "reservations/" + id ).delete().get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
     Map<String, Object> toFirebaseModel(Order order) {
         Map<String, Object> object = new HashMap<>();
         object.put( "customerId", order.getCustomer() );
@@ -128,6 +167,15 @@ final class DefaultFirebaseClient implements FirebaseClient {
             orders.add( foodMap );
         }
         object.put( "orders", orders );
+        return object;
+    }
+
+    Map<String, Object> toFirebaseModel(Reservation reservation) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "customer", reservation.getCustomer() );
+        object.put( "table", reservation.getTable() );
+        object.put( "start", Date.from( reservation.getStart().atZone( ZoneId.systemDefault() ).toInstant() ) );
+        object.put( "end", Date.from( reservation.getEnd().atZone( ZoneId.systemDefault() ).toInstant() ) );
         return object;
     }
 
@@ -167,6 +215,18 @@ final class DefaultFirebaseClient implements FirebaseClient {
         double orderPrice = Double.parseDouble( "" + data.getOrDefault( "price", "0" ) );
         int orderQuantity = Integer.parseInt( "" + data.getOrDefault( "quantity", "0" ) );
         return new FoodOrder( orderName, orderPrice, orderQuantity );
+    }
+
+    Reservation toReservation( DocumentSnapshot doc ) {
+        String table = doc.getString( "table" );
+        String customer = doc.getString( "customer" );
+        LocalDateTime start =
+                ( ( Date ) doc.get( "start" ) ).toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime();
+        LocalDateTime end =
+                ( ( Date ) doc.get( "end" ) ).toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime();
+        Reservation reservation = new Reservation( table, start, end, customer );
+        reservation.setId( doc.getId() );
+        return reservation;
     }
 
 }

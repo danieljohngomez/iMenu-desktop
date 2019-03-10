@@ -2,6 +2,7 @@ package com.imenu.desktop.spring;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -66,6 +67,21 @@ class MockFirebaseClient implements FirebaseClient {
 
     @Override
     public void clearOrder( String tableId ) {
+    }
+
+    @Override
+    public List<Reservation> getReservations() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Reservation upsertReservation( Reservation reservation ) {
+        return reservation;
+    }
+
+    @Override
+    public void removeReservation( String id ) {
+
     }
 
 }

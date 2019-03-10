@@ -8,6 +8,7 @@ import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_WEEK;
 import static org.vaadin.stefan.fullcalendar.SchedulerView.TIMELINE_YEAR;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,9 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 
-import org.apache.tomcat.jni.Local;
 import org.vaadin.stefan.fullcalendar.CalendarView;
 import org.vaadin.stefan.fullcalendar.CalendarViewImpl;
 import org.vaadin.stefan.fullcalendar.Entry;
@@ -31,6 +30,7 @@ import org.vaadin.stefan.fullcalendar.ResourceEntry;
 import org.vaadin.stefan.fullcalendar.Scheduler;
 import org.vaadin.stefan.fullcalendar.SchedulerView;
 import org.vaadin.stefan.fullcalendar.TimeslotsSelectedSchedulerEvent;
+import org.vaadin.stefan.fullcalendar.Timezone;
 
 import com.google.common.collect.ImmutableList;
 import com.vaadin.flow.component.Component;
@@ -63,7 +63,12 @@ public class ReservationsCalendar extends Div {
 
     private Button buttonDatePicker;
 
-    public ReservationsCalendar() {
+    private FirebaseClient client;
+
+    private List<Resource> resources = new ArrayList<>();
+
+    public ReservationsCalendar( FirebaseClient client ) {
+        this.client = client;
         add( createToolbar() );
 
         add( new Hr() );
@@ -78,7 +83,15 @@ public class ReservationsCalendar extends Div {
         getElement().getStyle().set( "display", "flex" );
         getElement().getStyle().set( "flex-direction", "column" );
 
-        addReservation( new Reservation( "table 1", LocalDateTime.now(), LocalDateTime.now(), "Customer 1" ) );
+        for ( Table table : client.getTables() ) {
+            Resource r = new Resource( table.getName(), "Table " + table.getName(), null );
+            ( ( Scheduler ) calendar ).addResource( r );
+            resources.add( r );
+        }
+
+        for ( Reservation reservation : client.getReservations() ) {
+            addReservationToUi( reservation );
+        }
     }
 
     private Component createToolbar() {
@@ -147,7 +160,8 @@ public class ReservationsCalendar extends Div {
 
         ( ( Scheduler ) calendar ).setSchedulerLicenseKey( Scheduler.GPL_V3_LICENSE_KEY );
 
-        calendar.addEntryClickedListener( event -> new EntryDialog( calendar, ( ResourceEntry ) event.getEntry(), false ).open() );
+        calendar.addEntryClickedListener(
+                event -> new EntryDialog( calendar, ( ReservationEntry ) event.getEntry(), false ).open() );
         calendar.addEntryResizedListener( event -> {
             event.applyChangesOnEntry();
 
@@ -157,38 +171,25 @@ public class ReservationsCalendar extends Div {
                     + calendar.getTimezone().getClientSideValue() + " by " + event.getDelta() );
         } );
         calendar.addEntryDroppedListener( event -> {
-            event.applyChangesOnEntry();
+            //event.applyChangesOnEntry();
 
-            Entry entry = event.getEntry();
-            LocalDateTime start = entry.getStart();
-            LocalDateTime end = entry.getEnd();
+            ReservationEntry entry = ( ReservationEntry ) event.getEntry();
+            entry.setStart( event.getDelta().applyOn( entry.getStart() ) );
+            entry.setEnd( event.getDelta().applyOn( entry.getEnd() ) );
 
-            String text = entry.getTitle() + " moved to " + start + " - " + end + " "
-                    + calendar.getTimezone().getClientSideValue() + " by " + event.getDelta();
-
-            if ( entry instanceof ResourceEntry ) {
-                Set<Resource> resources = ( ( ResourceEntry ) entry ).getResources();
-                if ( !resources.isEmpty() ) {
-                    text += text + " - rooms are " + resources;
-                }
-            }
-
-            Notification.show( text );
+            client.upsertReservation( entry.getReservation() );
         } );
         calendar.addViewRenderedListener(
                 event -> updateIntervalLabel( buttonDatePicker, calendarViews.getValue(), event.getIntervalStart() ) );
 
         calendar.addTimeslotsSelectedListener( ( TimeslotsSelectedSchedulerEvent event ) -> {
-            ResourceEntry entry = new ResourceEntry();
-
-            entry.setStart( calendar.getTimezone().convertToUTC( event.getStartDateTime() ) );
-            entry.setEnd( calendar.getTimezone().convertToUTC( event.getEndDateTime() ) );
+            ReservationEntry entry = new ReservationEntry(new Reservation( "", event.getStartDateTime(),
+                    event.getEndDateTime(), "" ));
             event.getResource().ifPresent( resource -> entry.addResources( ImmutableList.of( resource ) ) );
-
             entry.setColor( "dodgerblue" );
             new EntryDialog( calendar, entry, true ).open();
         } );
-        
+
         calendar.addLimitedEntriesClickedListener( event -> {
             Collection<Entry> entries = calendar.getEntries( event.getClickedDate() );
             if ( !entries.isEmpty() ) {
@@ -204,7 +205,7 @@ public class ReservationsCalendar extends Div {
                         .sorted( Comparator.comparing( Entry::getTitle ) )
                         .map( entry -> {
                             NativeButton button = new NativeButton( entry.getTitle(),
-                                    clickEvent -> new EntryDialog( calendar, ( ResourceEntry ) entry, false ).open() );
+                                    clickEvent -> new EntryDialog( calendar, ( ReservationEntry ) entry, false ).open() );
                             Style style = button.getStyle();
                             style.set( "background-color",
                                     Optional.ofNullable( entry.getColor() ).orElse( "rgb(58, 135, 173)" ) );
@@ -233,14 +234,20 @@ public class ReservationsCalendar extends Div {
         return calendar;
     }
 
-    private void addReservation( Reservation reservation ) {
+    private void addReservationToUi( Reservation reservation ) {
         Scheduler scheduler = ( Scheduler ) calendar;
-        Resource resource = new Resource( reservation.getId(), "Table " + reservation.getTable(), null );
-        scheduler.addResource( resource );
+        Resource resource =
+                resources.stream().filter( r -> r.getId().equals( reservation.getId() ) ).findAny()
+                .orElseGet( () -> {
+                    Resource r = new Resource( reservation.getTable(), "Table " + reservation.getTable(), null );
+                    scheduler.addResource( r );
+                    resources.add( r );
+                    return r;
+                } );
         LocalDateTime start = reservation.getStart();
         LocalDateTime end = reservation.getEnd();
-        ResourceEntry entry = new ResourceEntry( reservation.getId(), reservation.getCustomer(), start, end,
-                calendar.getTimezone(), false, true, null, "" );
+        ReservationEntry entry = new ReservationEntry( reservation.getId(), reservation.getCustomer(), start, end,
+                calendar.getTimezone(), false, true, null, "", reservation );
         entry.addResources( ImmutableList.of( resource ) );
         calendar.addEntry( entry );
     }
@@ -282,9 +289,9 @@ public class ReservationsCalendar extends Div {
         intervalLabel.setText( text );
     }
 
-    public static class EntryDialog extends Dialog {
+    public class EntryDialog extends Dialog {
 
-        EntryDialog( FullCalendar calendar, ResourceEntry entry, boolean newInstance ) {
+        EntryDialog( FullCalendar calendar, ReservationEntry entry, boolean newInstance ) {
             setCloseOnEsc( true );
             setCloseOnOutsideClick( true );
 
@@ -316,10 +323,34 @@ public class ReservationsCalendar extends Div {
             if ( newInstance ) {
                 buttonSave = new Button( "Create", e -> {
                     entry.getResource().ifPresent( resource -> entry.addResources( ImmutableList.of( resource ) ) );
-                    calendar.addEntry( entry );
-                });
+
+                    LocalDate localDate = entry.getEnd().toLocalDate();
+                    LocalDateTime start = LocalDateTime.of( localDate, fieldStart.getValue() );
+                    LocalDateTime end = LocalDateTime.of( localDate, fieldEnd.getValue() );
+                    String table = entry.getResource().map( Resource::getId ).orElse( "" );
+
+                    entry.setStart( start );
+                    entry.setEnd( end );
+                    entry.getReservation().setTable( table );
+                    entry.getReservation().setCustomer( fieldTitle.getValue() );
+                    entry.setReservation( client.upsertReservation( entry.getReservation() ) );
+                    // create new entry to set id
+                    calendar.addEntry( new ReservationEntry( entry ) );
+                } );
             } else {
-                buttonSave = new Button( "Save", e -> calendar.updateEntry( entry ) );
+                buttonSave = new Button( "Save", e -> {
+                    LocalDate localDate = entry.getEnd().toLocalDate();
+                    entry.setStart( LocalDateTime.of( localDate, fieldStart.getValue() ) );
+                    entry.setEnd( LocalDateTime.of( localDate, fieldEnd.getValue() ) );
+                    calendar.removeEntry( entry );
+                    calendar.addEntry( entry );
+
+                    String table = entry.getResource().map( Resource::getId ).orElse( "" );
+                    Reservation reservation = new Reservation( table, entry.getStart(), entry.getEnd(),
+                            fieldTitle.getValue() );
+                    reservation.setId( entry.getId() );
+                    client.upsertReservation( reservation );
+                } );
             }
             buttonSave.addClickListener( e -> close() );
             buttons.add( buttonSave );
@@ -331,6 +362,7 @@ public class ReservationsCalendar extends Div {
             if ( !newInstance ) {
                 Button buttonRemove = new Button( "Remove", e -> {
                     calendar.removeEntry( entry );
+                    client.removeReservation( entry.getId() );
                     close();
                 } );
                 ThemeList themeList = buttonRemove.getElement().getThemeList();
@@ -348,6 +380,67 @@ public class ReservationsCalendar extends Div {
         public MyFullCalendarScheduler() {
         }
 
+    }
+
+    public static class ReservationEntry extends ResourceEntry {
+        private Reservation reservation;
+
+        public ReservationEntry( ReservationEntry entry ) {
+            super( entry.getReservation().getId(), entry.getTitle(), entry.getStart(), entry.getEnd(), entry.isAllDay(),
+                    entry.isEditable(), entry.getColor(), entry.getDescription() );
+            setReservation( entry.getReservation() );
+            addResources( entry.getResources() );
+        }
+
+        public ReservationEntry( String id, String title, Instant start, Instant end, boolean allDay,
+                boolean editable, String color, String description, Reservation reservation ) {
+            super( id, title, start, end, allDay, editable, color, description );
+            setReservation( reservation );
+        }
+
+        public ReservationEntry( String id, String title, LocalDateTime start, LocalDateTime end, boolean allDay,
+                boolean editable, String color, String description, Reservation reservation ) {
+            super( id, title, start, end, allDay, editable, color, description );
+            setReservation( reservation );
+        }
+
+        public ReservationEntry( String id, String title, LocalDateTime start, LocalDateTime end,
+                Timezone timezone, boolean allDay, boolean editable, String color,
+                String description, Reservation reservation ) {
+            super( id, title, start, end, timezone, allDay, editable, color, description );
+            setReservation( reservation );
+        }
+
+        public ReservationEntry( Reservation reservation ) {
+            setReservation( reservation );
+        }
+
+        public ReservationEntry( String id, Reservation reservation ) {
+            super( id );
+            setReservation( reservation );
+        }
+
+        public Reservation getReservation() {
+            return reservation;
+        }
+
+        @Override
+        public void setStart( LocalDateTime start ) {
+            super.setStart( start );
+            getReservation().setStart( start );
+        }
+
+        @Override
+        public void setEnd( LocalDateTime end ) {
+            super.setEnd( end );
+            getReservation().setEnd( end );
+        }
+
+        public void setReservation( Reservation reservation ) {
+            this.reservation = reservation;
+            setStart( reservation.getStart() );
+            setEnd( reservation.getEnd() );
+        }
     }
 
 }

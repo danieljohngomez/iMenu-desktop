@@ -6,8 +6,8 @@ import com.vaadin.flow.router.Route;
 @Route( value = "reservations", layout = MyAppLayoutRouterLayout.class )
 public class ReservationView extends VerticalLayout {
 
-    public ReservationView() {
-        add( new ReservationsCalendar() );
+    public ReservationView( FirebaseClient client ) {
+        add( new ReservationsCalendar( client ) );
         setSizeFull();
     }
 }

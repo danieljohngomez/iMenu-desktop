@@ -14,8 +14,13 @@ public interface FirebaseClient {
 
     List<Order> getOrders();
 
-    Order addOrder(Order order);
+    Order addOrder( Order order );
 
-    void clearOrder(String tableId);
+    void clearOrder( String tableId );
 
+    List<Reservation> getReservations();
+
+    Reservation upsertReservation( Reservation reservation );
+
+    void removeReservation( String id );
 }
