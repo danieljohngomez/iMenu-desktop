@@ -14,4 +14,8 @@ public interface FirebaseClient {
 
     List<Order> getOrders();
 
+    Order addOrder(Order order);
+
+    void clearOrder(String tableId);
+
 }

@@ -1,12 +1,11 @@
 package com.imenu.desktop.spring.ui;
 
-import java.util.Map.Entry;
-
 import org.apache.logging.log4j.util.Strings;
 
-import com.imenu.desktop.spring.Food;
 import com.imenu.desktop.spring.FoodOrder;
 import com.imenu.desktop.spring.Order;
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
@@ -30,13 +29,12 @@ public class BillDialog extends Dialog {
         VerticalLayout layout = new VerticalLayout();
         layout.setDefaultHorizontalComponentAlignment( Alignment.CENTER );
 
-
         H4 title = new H4( "Order" );
         if ( Strings.isNotBlank( order.getId() ) )
             title.setText( title.getText() + " #" + order.getId() );
         layout.add( title );
 
-        if ( Strings.isNotBlank(order.getCustomer()) ) {
+        if ( Strings.isNotBlank( order.getCustomer() ) ) {
             Label customer = new Label( "Customer: " + order.getCustomer() );
             layout.add( customer );
         }
@@ -64,6 +62,8 @@ public class BillDialog extends Dialog {
         billOut = new Button( "Bill Out" );
         billOut.setSizeFull();
         layout.add( billOut );
+        if ( order.getFoods().isEmpty() )
+            billOut.setEnabled( false );
 
         Button close = new Button( "Close", e -> this.close() );
         close.setSizeFull();
@@ -74,6 +74,10 @@ public class BillDialog extends Dialog {
 
     public Button getBillOutButton() {
         return billOut;
+    }
+
+    void addBillOutListener( ComponentEventListener<ClickEvent<Button>> listener ) {
+        billOut.addClickListener( listener );
     }
 
 }

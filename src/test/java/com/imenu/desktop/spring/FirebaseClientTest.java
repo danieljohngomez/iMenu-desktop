@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -15,6 +17,7 @@ import org.testng.annotations.Test;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -33,9 +36,9 @@ public class FirebaseClientTest {
 
         FirebaseApp.initializeApp( options );
         try {
-            FirestoreClient.getFirestore().collection("orders").get().get().getDocuments().stream()
-                    .map( d -> toOrder( d ) )
-            .collect( Collectors.toList() );
+            FirestoreClient.getFirestore().document( "tables/MtMKTpOfCFe097bVGiqx" )
+                    .update( "orders", new ArrayList<>() )
+                    .get();
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
         }
@@ -51,6 +54,7 @@ public class FirebaseClientTest {
         List<FoodOrder> foodOrders = orders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
         return new Order( id, time, customerId, tableName, foodOrders );
     }
+
 
     FoodOrder toFoodOrder( Map<String, Object> data) {
         String orderName = "" + data.getOrDefault( "name", "" );

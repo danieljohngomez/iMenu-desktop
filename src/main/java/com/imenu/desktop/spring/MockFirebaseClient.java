@@ -59,4 +59,13 @@ class MockFirebaseClient implements FirebaseClient {
         );
     }
 
+    @Override
+    public Order addOrder( Order order ) {
+        return order;
+    }
+
+    @Override
+    public void clearOrder( String tableId ) {
+    }
+
 }

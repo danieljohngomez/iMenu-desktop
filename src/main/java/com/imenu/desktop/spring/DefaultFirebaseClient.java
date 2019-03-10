@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -87,6 +89,46 @@ final class DefaultFirebaseClient implements FirebaseClient {
             e.printStackTrace();
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public Order addOrder( Order order ) {
+        try {
+            DocumentSnapshot orderSnapshot = FirestoreClient.getFirestore().collection( "orders" ).add(
+                    toFirebaseModel( order ) ).get().get().get();
+            return toOrder( orderSnapshot );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return order;
+    }
+
+    @Override
+    public void clearOrder( String tableId ) {
+        try {
+            FirestoreClient.getFirestore().document( "tables/" + tableId )
+                    .update( "orders", new ArrayList<>() )
+                    .get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    Map<String, Object> toFirebaseModel(Order order) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "customerId", order.getCustomer() );
+        object.put( "tableName", order.getTable() );
+        object.put( "time", Date.from( order.getTime().atZone( ZoneId.systemDefault() ).toInstant() ) );
+        List<Map<String, Object>> orders = new ArrayList<>();
+        for ( FoodOrder food : order.getFoods() ) {
+            Map<String, Object> foodMap = new HashMap<>();
+            foodMap.put( "name", food.getName() );
+            foodMap.put( "price", food.getPrice() );
+            foodMap.put( "quantity", food.getQuantity() );
+            orders.add( foodMap );
+        }
+        object.put( "orders", orders );
+        return object;
     }
 
     Table toTable( DocumentSnapshot doc ) {
