@@ -6,8 +6,10 @@ import java.util.List;
 public class Category {
     private String name;
     private List<Food> items;
+    private String id;
 
-    public Category( String name ) {
+    public Category( String id, String name ) {
+        this.id = id;
         this.name = name;
         this.items = new ArrayList<>();
     }
@@ -18,5 +20,9 @@ public class Category {
 
     public List<Food> getItems() {
         return items;
+    }
+
+    public String getId() {
+        return id;
     }
 }

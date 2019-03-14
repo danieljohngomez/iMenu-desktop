@@ -10,6 +10,7 @@ import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
+import com.imenu.desktop.spring.ui.menu.MenuView;
 import com.imenu.desktop.spring.ui.OrdersView;
 import com.imenu.desktop.spring.ui.TablesView;
 import com.vaadin.flow.component.html.Div;
@@ -54,21 +55,13 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
                         .add( accounts )
                         .build() )
                 .withAppMenu( LeftAppMenuBuilder.get()
-                        .add( new LeftNavigationComponent( "Menu" , VaadinIcon.CUTLERY, Menu.class ) )
+                        .add( new LeftNavigationComponent( "Menu" , VaadinIcon.CUTLERY, MenuView.class ) )
                         .add( new LeftNavigationComponent( "Reservations" , VaadinIcon.CALENDAR_O, ReservationView.class ) )
                         .add( new LeftNavigationComponent( "Tables" , VaadinIcon.SAFE, TablesView.class ) )
                         .add( new LeftNavigationComponent( "Customers" , VaadinIcon.USERS, Customers.class ) )
                         .add( new LeftNavigationComponent( "Orders" , VaadinIcon.CLIPBOARD, OrdersView.class ) )
                         .build() )
                 .build() );
-    }
-
-    @Route( value = "menu", layout = MyAppLayoutRouterLayout.class )
-    public static class Menu extends VerticalLayout {
-
-        public Menu() {
-            // Add the content for this path
-        }
     }
 
     @Route( value = "customers", layout = MyAppLayoutRouterLayout.class )

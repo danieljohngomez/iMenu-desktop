@@ -1,11 +1,13 @@
 package com.imenu.desktop.spring;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.cloud.storage.Blob;
 import com.google.common.collect.ImmutableList;
 import com.imenu.desktop.spring.Table.Status;
 
@@ -15,10 +17,10 @@ class MockFirebaseClient implements FirebaseClient {
     private List<Menu> menu;
 
     public MockFirebaseClient() {
-        Menu mainCourse = new Menu( "Main Course" );
-        Category meat = new Category( "Meat" );
-        meat.getItems().add( new Food( "Meat1" ) );
-        meat.getItems().add( new Food( "Meat2" ) );
+        Menu mainCourse = new Menu( "123", "Main Course" );
+        Category meat = new Category( "1234", "Meat" );
+        meat.getItems().add( new Food( "1", "Meat1" ) );
+        meat.getItems().add( new Food( "2", "Meat2" ) );
         mainCourse.getCategories().add( meat );
 
         this.menu = ImmutableList.of( mainCourse );
@@ -38,6 +40,16 @@ class MockFirebaseClient implements FirebaseClient {
         return getCategories( "" ).stream()
                 .flatMap( category -> category.getItems().stream() )
                 .collect( Collectors.toList() );
+    }
+
+    @Override
+    public String setFood( String path, Food food ) {
+        return null;
+    }
+
+    @Override
+    public void deleteFood( String path ) {
+
     }
 
     @Override
@@ -82,6 +94,11 @@ class MockFirebaseClient implements FirebaseClient {
     @Override
     public void removeReservation( String id ) {
 
+    }
+
+    @Override
+    public Blob upload( String path, String mimeType, InputStream inputStream ) {
+        return null;
     }
 
 }

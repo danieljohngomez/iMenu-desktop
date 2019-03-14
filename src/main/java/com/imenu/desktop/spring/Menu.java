@@ -6,8 +6,10 @@ import java.util.List;
 public class Menu {
     private String name;
     private List<Category> categories;
+    private String id;
 
-    public Menu( String name ) {
+    public Menu( String id, String name ) {
+        this.id = id;
         this.name = name;
         this.categories = new ArrayList<>();
     }
@@ -20,4 +22,7 @@ public class Menu {
         return categories;
     }
 
+    public String getId() {
+        return id;
+    }
 }

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -13,21 +14,29 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Bucket.BlobWriteOption;
+import com.google.cloud.storage.Storage.PredefinedAcl;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.firebase.cloud.StorageClient;
 import com.imenu.desktop.spring.Table.Status;
 
 @Component
 final class DefaultFirebaseClient implements FirebaseClient {
 
     Firestore client;
+
+    List<Menu> menuList;
 
     public DefaultFirebaseClient() {
         if ( FirebaseApp.getApps().isEmpty() ) {
@@ -47,17 +56,78 @@ final class DefaultFirebaseClient implements FirebaseClient {
 
     @Override
     public List<Menu> getMenu() {
-        return Collections.emptyList();
+        List<Menu> menuList = new ArrayList<>();
+        try {
+            for ( QueryDocumentSnapshot menuDoc : FirestoreClient.getFirestore().collection(
+                    "menu" ).get().get().getDocuments() ) {
+                Menu menu = new Menu( menuDoc.getId(), menuDoc.getString( "name" ) );
+                for ( QueryDocumentSnapshot categoryDoc : menuDoc.getReference().collection(
+                        "categories" ).get().get().getDocuments() ) {
+                    Category category = new Category( categoryDoc.getId(), categoryDoc.getString( "name" ) );
+                    for ( QueryDocumentSnapshot item : categoryDoc.getReference().collection(
+                            "items" ).get().get().getDocuments() ) {
+                        Double price = item.getDouble( "price" );
+                        Food food = new Food( item.getId(), item.getString( "name" ), price != null ? price : 0 );
+                        food.setImage( item.getString( "image" ) );
+                        category.getItems().add( food );
+                    }
+                    menu.getCategories().add( category );
+                }
+                menuList.add( menu );
+            }
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        this.menuList = menuList;
+        Collections.sort(this.menuList, Comparator.comparing(Menu::getName));
+        return this.menuList;
     }
 
     @Override
-    public List<Category> getCategories( String menuId ) {
-        return Collections.emptyList();
+    public List<Category> getCategories( String menuName ) {
+        if ( this.menuList == null )
+            getMenu();
+        return this.menuList.stream()
+                .filter( m -> m.getName().equals( menuName ) )
+                .flatMap( m -> m.getCategories().stream() )
+                .collect( Collectors.toList() );
     }
 
     @Override
-    public List<Food> getFoods( String categoryId ) {
-        return Collections.emptyList();
+    public List<Food> getFoods( String categoryName ) {
+        return this.menuList.stream()
+                .flatMap( m -> m.getCategories().stream() )
+                .filter( c -> c.getName().equals( categoryName ) )
+                .flatMap( c -> c.getItems().stream() )
+                .collect( Collectors.toList() );
+    }
+
+    @Override
+    public String setFood( String path, Food food ) {
+        try {
+            if ( Strings.isBlank( food.getId() ) ) {
+                return FirestoreClient.getFirestore().collection( path )
+                        .add( toFirebaseModel( food ) ).get().get().get().getId();
+            } else {
+                FirestoreClient.getFirestore().document( path )
+                        .set( toFirebaseModel( food ) )
+                        .get();
+                return food.getId();
+            }
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public void deleteFood( String path ) {
+        try {
+            FirestoreClient.getFirestore().document( path )
+                    .delete().get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -129,7 +199,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
     @Override
     public Reservation upsertReservation( Reservation reservation ) {
         try {
-            if (reservation.getId() == null) {
+            if ( reservation.getId() == null ) {
                 DocumentSnapshot doc = FirestoreClient.getFirestore().collection( "reservations" )
                         .add( toFirebaseModel( reservation ) ).get().get().get();
                 return toReservation( doc );
@@ -153,7 +223,14 @@ final class DefaultFirebaseClient implements FirebaseClient {
         }
     }
 
-    Map<String, Object> toFirebaseModel(Order order) {
+    @Override
+    public Blob upload( String path, String mimeType, InputStream inputStream ) {
+        return StorageClient.getInstance().bucket( "imenu-59599.appspot.com" )
+                .create( path, inputStream, mimeType,
+                        BlobWriteOption.predefinedAcl( PredefinedAcl.PUBLIC_READ ) );
+    }
+
+    Map<String, Object> toFirebaseModel( Order order ) {
         Map<String, Object> object = new HashMap<>();
         object.put( "customerId", order.getCustomer() );
         object.put( "tableName", order.getTable() );
@@ -170,7 +247,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
         return object;
     }
 
-    Map<String, Object> toFirebaseModel(Reservation reservation) {
+    Map<String, Object> toFirebaseModel( Reservation reservation ) {
         Map<String, Object> object = new HashMap<>();
         object.put( "customer", reservation.getCustomer() );
         object.put( "table", reservation.getTable() );
@@ -179,12 +256,21 @@ final class DefaultFirebaseClient implements FirebaseClient {
         return object;
     }
 
+
+    Map<String, Object> toFirebaseModel( Food food ) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "image", food.getImage() );
+        object.put( "name", food.getName() );
+        object.put( "price", food.getPrice() );
+        return object;
+    }
+
     Table toTable( DocumentSnapshot doc ) {
         String name = doc.getString( "name" );
         Status status = Status.valueOf( doc.getString( "status" ).toUpperCase() );
         String customer = doc.getString( "customer" );
         List<Map<String, Object>> docOrders = ( List<Map<String, Object>> ) doc.get( "orders" );
-        List<FoodOrder> foodOrders = docOrders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
+        List<FoodOrder> foodOrders = docOrders.stream().map( this::toFoodOrder ).collect( Collectors.toList() );
         Table table = new Table( name, status, foodOrders );
         table.setId( doc.getId() );
         table.setCustomer( customer );
@@ -193,15 +279,16 @@ final class DefaultFirebaseClient implements FirebaseClient {
 
     Order toOrder( DocumentSnapshot doc ) {
         String id = doc.getId();
-        LocalDateTime time = (( Date )doc.get( "time" )).toInstant().atZone( ZoneId.systemDefault() ).toLocalDateTime();
-        String customerId = doc.getString("customerId"); // TODO cutomer name
+        LocalDateTime time = ( ( Date ) doc.get( "time" ) ).toInstant().atZone(
+                ZoneId.systemDefault() ).toLocalDateTime();
+        String customerId = doc.getString( "customerId" ); // TODO cutomer name
         String tableName = doc.getString( "tableName" );
         List<Map<String, Object>> orders = ( List<Map<String, Object>> ) doc.get( "orders" );
-        List<FoodOrder> foodOrders = orders.stream().map( this::toFoodOrder ).collect( Collectors.toList());
+        List<FoodOrder> foodOrders = orders.stream().map( this::toFoodOrder ).collect( Collectors.toList() );
         return new Order( id, time, customerId, tableName, foodOrders );
     }
 
-    void updateTable(Table table, DocumentSnapshot doc) {
+    void updateTable( Table table, DocumentSnapshot doc ) {
         Table updated = toTable( doc );
         table.setId( updated.getId() );
         table.setName( updated.getName() );
@@ -210,7 +297,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
         table.setCustomer( updated.getCustomer() );
     }
 
-    FoodOrder toFoodOrder(Map<String, Object> data) {
+    FoodOrder toFoodOrder( Map<String, Object> data ) {
         String orderName = "" + data.getOrDefault( "name", "" );
         double orderPrice = Double.parseDouble( "" + data.getOrDefault( "price", "0" ) );
         int orderQuantity = Integer.parseInt( "" + data.getOrDefault( "quantity", "0" ) );

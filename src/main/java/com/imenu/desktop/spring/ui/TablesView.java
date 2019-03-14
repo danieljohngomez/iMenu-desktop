@@ -3,7 +3,6 @@ package com.imenu.desktop.spring.ui;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -23,9 +22,7 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
-import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.Command;
 
@@ -104,33 +101,4 @@ public class TablesView extends HorizontalLayout {
         return new Card( title, tableNumber, status, viewOrder );
     }
 
-    public static class Card extends VerticalLayout {
-
-        public Card() {
-            initStyle();
-        }
-
-        public Card( Component... components ) {
-            super( components );
-            initStyle();
-        }
-
-        void initStyle() {
-            Style style = getStyle();
-            style.set( "background", "#fff" );
-            style.set( "border-radius", "2px" );
-            //style.set( "display", "inline-block" );
-            //style.set( "height", "300px" );
-            style.set( "margin", "1rem" );
-            //style.set( "position", "relative" );
-            //style.set( "width", "300px" );
-            style.set( "box-shadow", "0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)" );
-            style.set( "padding-left", "60px" );
-            style.set( "padding-right", "60px" );
-            style.set( "padding-top", "30px" );
-            style.set( "padding-bottom", "30px" );
-            setDefaultHorizontalComponentAlignment( Alignment.CENTER );
-            setSizeUndefined();
-        }
-    }
 }
