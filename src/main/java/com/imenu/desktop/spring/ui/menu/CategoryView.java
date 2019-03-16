@@ -22,7 +22,7 @@ public class CategoryView extends VerticalLayout {
 
     private final Category category;
 
-    private HorizontalLayout layout;
+    private HorizontalLayout foodLayout;
 
     public CategoryView( FirebaseClient client, String menuId, Category category ) {
         this.client = client;
@@ -30,24 +30,25 @@ public class CategoryView extends VerticalLayout {
         this.category = category;
         Label label = new Label( category.getName() );
 
-        layout = new HorizontalLayout();
+        foodLayout = new HorizontalLayout();
         for ( Food food : category.getItems() ) {
-            layout.add( createFoodCard( food ) );
+            foodLayout.add( createFoodCard( food ) );
         }
 
-        Button addButton = new Button( "Add" );
+        Button addButton = new Button( "Add Food" );
         addButton.addClickListener( ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> {
             Food foodToAdd = new Food( null, "", 0 );
             FoodDialog dialog = new FoodDialog( client, menuId, category.getId(), foodToAdd );
             dialog.saveListeners.add(
-                    ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent1 -> layout.addComponentAtIndex(
-                            layout.getComponentCount() - 1, createFoodCard( foodToAdd ) ) );
+                    ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent1 -> foodLayout.addComponentAtIndex(
+                            foodLayout.getComponentCount() - 1, createFoodCard( foodToAdd ) ) );
             dialog.open();
         } );
-        layout.add( addButton );
 
-        add( label );
-        add( layout );
+        HorizontalLayout headerLayout = new HorizontalLayout( label, addButton );
+        headerLayout.setDefaultVerticalComponentAlignment( Alignment.CENTER );
+        add( headerLayout );
+        add( foodLayout );
     }
 
     Component createFoodCard( Food food ) {
@@ -73,7 +74,7 @@ public class CategoryView extends VerticalLayout {
                         price.setText( String.format( "P%.2f", food.getPrice() ) );
                     } );
                     dialog.deleteListeners.add(
-                            ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> layout.remove( card ) );
+                            ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> foodLayout.remove( card ) );
                     dialog.open();
                 } );
         return card;

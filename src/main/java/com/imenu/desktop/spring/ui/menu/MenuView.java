@@ -1,6 +1,7 @@
 package com.imenu.desktop.spring.ui.menu;
 
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class MenuView extends VerticalLayout {
         //setSizeFull();
 
         List<Menu> menuList = firebaseClient.getMenu();
-        Map<Tab, Component> tabsToPages = new HashMap<>();
+        Map<Tab, Component> tabsToPages = new LinkedHashMap<>();
         for ( int i = 0; i < menuList.size(); i++ ) {
             Menu menu = menuList.get( i );
             Tab menuTab = new Tab( menu.getName() );
@@ -48,7 +49,7 @@ public class MenuView extends VerticalLayout {
     class MenuItemView extends VerticalLayout {
 
         public MenuItemView( FirebaseClient firebaseClient, Menu menu ) {
-            Button addButton = new Button( "Add" );
+            Button addButton = new Button( "Add Category" );
             add( addButton );
             setHorizontalComponentAlignment( Alignment.CENTER, addButton );
 
