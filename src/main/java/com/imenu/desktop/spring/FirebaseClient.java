@@ -15,7 +15,7 @@ public interface FirebaseClient {
 
     String setFood( String path, Food food );
 
-    void deleteFood(String path);
+    void deleteFood( String path );
 
     List<Table> getTables();
 
@@ -33,5 +33,8 @@ public interface FirebaseClient {
 
     Blob upload( String path, String mimeType, InputStream inputStream );
 
+    RestaurantInfo getInfo();
+
+    void setInfo( RestaurantInfo info );
 
 }

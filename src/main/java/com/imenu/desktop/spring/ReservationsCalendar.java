@@ -168,11 +168,6 @@ public class ReservationsCalendar extends Div {
                 event -> new EntryDialog( calendar, ( ReservationEntry ) event.getEntry(), false ).open() );
         calendar.addEntryResizedListener( event -> {
             event.applyChangesOnEntry();
-
-            Entry entry = event.getEntry();
-
-            Notification.show( entry.getTitle() + " resized to " + entry.getStart() + " - " + entry.getEnd() + " "
-                    + calendar.getTimezone().getClientSideValue() + " by " + event.getDelta() );
         } );
         calendar.addEntryDroppedListener( event -> {
             //event.applyChangesOnEntry();

@@ -10,6 +10,7 @@ import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
+import com.imenu.desktop.spring.ui.RestaurantView;
 import com.imenu.desktop.spring.ui.menu.MenuView;
 import com.imenu.desktop.spring.ui.OrdersView;
 import com.imenu.desktop.spring.ui.TablesView;
@@ -60,6 +61,7 @@ public class MyAppLayoutRouterLayout extends AppLayoutRouterLayout {
                         .add( new LeftNavigationComponent( "Tables" , VaadinIcon.SAFE, TablesView.class ) )
                         .add( new LeftNavigationComponent( "Customers" , VaadinIcon.USERS, Customers.class ) )
                         .add( new LeftNavigationComponent( "Orders" , VaadinIcon.CLIPBOARD, OrdersView.class ) )
+                        .add( new LeftNavigationComponent( "Restaurant" , VaadinIcon.INFO, RestaurantView.class ) )
                         .build() )
                 .build() );
     }

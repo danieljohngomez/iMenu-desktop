@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket.BlobWriteOption;
@@ -230,6 +231,39 @@ final class DefaultFirebaseClient implements FirebaseClient {
                         BlobWriteOption.predefinedAcl( PredefinedAcl.PUBLIC_READ ) );
     }
 
+    @Override
+    public RestaurantInfo getInfo() {
+        try {
+            DocumentSnapshot doc = FirestoreClient.getFirestore().document(
+                    "restaurant/info" ).get().get();
+            return toRestaurantInfo( doc );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public void setInfo(RestaurantInfo info) {
+        try {
+            FirestoreClient.getFirestore().document(
+                    "restaurant/info" ).set(toFirebaseModel( info )).get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    private Map<String, Object> toFirebaseModel( RestaurantInfo info ) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "address", info.getAddress() );
+        object.put( "facebook", info.getFacebook() );
+        object.put( "twitter", info.getTwitter() );
+        object.put( "location", new GeoPoint( info.getLatitude(), info.getLongitude() ) );
+        object.put( "phone", info.getPhone() );
+        object.put( "schedule", info.getSchedule() );
+        return object;
+    }
+
     Map<String, Object> toFirebaseModel( Order order ) {
         Map<String, Object> object = new HashMap<>();
         object.put( "customerId", order.getCustomer() );
@@ -314,6 +348,18 @@ final class DefaultFirebaseClient implements FirebaseClient {
         Reservation reservation = new Reservation( table, start, end, customer );
         reservation.setId( doc.getId() );
         return reservation;
+    }
+
+    RestaurantInfo toRestaurantInfo( DocumentSnapshot doc ) {
+        GeoPoint location = doc.getGeoPoint( "location" );
+        return new RestaurantInfo(
+                doc.getString( "phone" ),
+                doc.getString( "facebook" ),
+                doc.getString( "twitter" ),
+                doc.getString( "address" ),
+                doc.getString( "schedule" ),
+                location.getLatitude(),
+                location.getLongitude() );
     }
 
 }

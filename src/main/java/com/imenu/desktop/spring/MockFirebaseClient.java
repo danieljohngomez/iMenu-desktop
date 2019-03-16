@@ -101,4 +101,14 @@ class MockFirebaseClient implements FirebaseClient {
         return null;
     }
 
+    @Override
+    public RestaurantInfo getInfo() {
+        return null;
+    }
+
+    @Override
+    public void setInfo( RestaurantInfo info ) {
+
+    }
+
 }
