@@ -17,6 +17,10 @@ public interface FirebaseClient {
 
     void deleteFood( String path );
 
+    void deleteCategory( String path );
+
+    Category addCategory( String menuId, Category category );
+
     List<Table> getTables();
 
     List<Order> getOrders();

@@ -1,5 +1,8 @@
 package com.imenu.desktop.spring.ui.menu;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.imenu.desktop.spring.Category;
 import com.imenu.desktop.spring.FirebaseClient;
 import com.imenu.desktop.spring.Food;
@@ -24,6 +27,8 @@ public class CategoryView extends VerticalLayout {
 
     private HorizontalLayout foodLayout;
 
+    List<ComponentEventListener<ClickEvent<Button>>> removeCategoryListeners = new ArrayList<>();
+
     public CategoryView( FirebaseClient client, String menuId, Category category ) {
         this.client = client;
         this.menuId = menuId;
@@ -40,13 +45,27 @@ public class CategoryView extends VerticalLayout {
             Food foodToAdd = new Food( null, "", 0 );
             FoodDialog dialog = new FoodDialog( client, menuId, category.getId(), foodToAdd );
             dialog.saveListeners.add(
-                    ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent1 -> foodLayout.addComponentAtIndex(
-                            foodLayout.getComponentCount() - 1, createFoodCard( foodToAdd ) ) );
+                    ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent1 -> {
+                        int index = foodLayout.getComponentCount() - 1;
+                        if ( index < 0 )
+                            index = 0;
+                        foodLayout.addComponentAtIndex( index, createFoodCard( foodToAdd ) );
+                    } );
             dialog.open();
         } );
 
-        HorizontalLayout headerLayout = new HorizontalLayout( label, addButton );
+        Button removeButton = new Button( "Remove Category" );
+        removeButton.addClickListener( new ComponentEventListener<ClickEvent<Button>>() {
+            @Override
+            public void onComponentEvent( ClickEvent<Button> buttonClickEvent ) {
+                client.deleteCategory( "menu/" + menuId + "/categories/" + category.getId() );
+            }
+        } );
+        removeButton.addClickListener( e -> removeCategoryListeners.forEach( cl -> cl.onComponentEvent( e ) ) );
+
+        HorizontalLayout headerLayout = new HorizontalLayout( label, addButton, removeButton );
         headerLayout.setDefaultVerticalComponentAlignment( Alignment.CENTER );
+
         add( headerLayout );
         add( foodLayout );
     }
@@ -74,7 +93,8 @@ public class CategoryView extends VerticalLayout {
                         price.setText( String.format( "P%.2f", food.getPrice() ) );
                     } );
                     dialog.deleteListeners.add(
-                            ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> foodLayout.remove( card ) );
+                            ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> foodLayout.remove(
+                                    card ) );
                     dialog.open();
                 } );
         return card;

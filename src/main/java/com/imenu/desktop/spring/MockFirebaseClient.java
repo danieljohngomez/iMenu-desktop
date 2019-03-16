@@ -53,6 +53,16 @@ class MockFirebaseClient implements FirebaseClient {
     }
 
     @Override
+    public void deleteCategory( String path ) {
+
+    }
+
+    @Override
+    public Category addCategory( String menuId, Category category ) {
+        return null;
+    }
+
+    @Override
     public List<Table> getTables() {
         Table table1 = new Table( "16", Status.OCCUPIED, ImmutableList.of(
             new FoodOrder( "Coffee", 100, 5 ),

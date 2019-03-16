@@ -17,7 +17,9 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
+import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.GeoPoint;
@@ -129,6 +131,30 @@ final class DefaultFirebaseClient implements FirebaseClient {
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void deleteCategory( String path ) {
+        try {
+            FirestoreClient.getFirestore().document( path ).delete().get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Category addCategory( String menuId, Category category ) {
+        Map<String, Object> model = new HashMap<>();
+        model.put( "name", category.getName() );
+        try {
+            DocumentReference documentReference = FirestoreClient.getFirestore().collection(
+                    "menu/" + menuId + "/categories" )
+                    .add( model ).get();
+            return new Category( documentReference.getId(), category.getName() );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return category;
     }
 
     @Override
