@@ -23,7 +23,8 @@ import com.vaadin.flow.theme.material.Material;
 @PWA(name = "My Restaurant", shortName = "My Restaurant")
 public class MainView extends MyAppLayoutRouterLayout {
 
-    public MainView(@Autowired MessageBean bean) {
+    public MainView(@Autowired MessageBean bean, @Autowired FirebaseClient client) {
+        super(client);
         //AppLayout appLayout = new AppLayout();
         //AppLayoutMenu menu = appLayout.createMenu();
         //Image img = new Image("https://i.imgur.com/GPpnszs.png", "Vaadin Logo");

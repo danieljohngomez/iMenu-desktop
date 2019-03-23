@@ -211,7 +211,6 @@
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:paper-icon-button:2.2.0" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:paper-tabs:2.1.1" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-menu-behavior:2.1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-selector:2.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.oyeharry:app-menu:2.1.2" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-collapse:2.2.1" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:paper-card:2.1.0" level="project" />
@@ -232,6 +231,10 @@
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.vaadin:vaadin-combo-box:4.2.3" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-list:2.0.19" level="project" />
     <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-scroll-target-behavior:2.1.1" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars.bowergithub.googlewebcomponents:google-map:2.0.5" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars.bowergithub.googlewebcomponents:google-apis:2.0.2" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-jsonp-library:2.1.0" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars.bowergithub.polymerelements:iron-selector:2.1.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.testng:testng:6.14.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.beust:jcommander:1.72" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.apache-extras.beanshell:bsh:2.0b6" level="project" />

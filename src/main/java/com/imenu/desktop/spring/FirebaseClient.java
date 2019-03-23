@@ -2,6 +2,7 @@ package com.imenu.desktop.spring;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.google.cloud.storage.Blob;
 
@@ -20,6 +21,10 @@ public interface FirebaseClient {
     void deleteCategory( String path );
 
     Category addCategory( String menuId, Category category );
+
+    Table addTable( String name );
+
+    void deleteTable( String id );
 
     List<Table> getTables();
 
@@ -41,4 +46,9 @@ public interface FirebaseClient {
 
     void setInfo( RestaurantInfo info );
 
+    List<Notification> getNotifications();
+
+    void onNotification( Consumer<Notification> callback );
+
+    void setNotification( Notification notification );
 }

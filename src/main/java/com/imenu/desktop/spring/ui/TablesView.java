@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.logging.log4j.util.Strings;
+
+import com.imenu.desktop.spring.Category;
 import com.imenu.desktop.spring.FirebaseClient;
 import com.imenu.desktop.spring.MyAppLayoutRouterLayout;
 import com.imenu.desktop.spring.Order;
@@ -22,7 +25,9 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.Command;
 
@@ -52,6 +57,29 @@ public class TablesView extends HorizontalLayout {
         add( progressLayout );
         List<Table> tables = client.getTables();
         removeAll();
+
+        TextField addTableNumberField = new TextField( null, "Table Number" );
+        Button addTable = new Button( "Add Table" );
+        addTable.addClickListener( ( ComponentEventListener<ClickEvent<Button>> ) buttonClickEvent -> {
+            addTableNumberField.setInvalid( false );
+            String tableNumber = addTableNumberField.getValue();
+            if ( Strings.isBlank(tableNumber)) {
+                addTableNumberField.setErrorMessage( "Required" );
+                addTableNumberField.setInvalid( true );
+            } else {
+                Table table = client.addTable( tableNumber );
+                add( createTableUi( table ) );
+                addTableNumberField.setValue( "" );
+            }
+        } );
+
+        VerticalLayout verticalLayout = new VerticalLayout();
+        verticalLayout.setWidth( "30%" );
+        HorizontalLayout layout = new HorizontalLayout( verticalLayout, addTableNumberField, addTable );
+        layout.setWidth( "100%" );
+        layout.getStyle().set( "padding-top", "20px" );
+        add( layout );
+
         setSizeUndefined();
         for ( Table table : tables ) {
             add( createTableUi( table ) );
@@ -85,6 +113,8 @@ public class TablesView extends HorizontalLayout {
             billDialog.open();
         } );
 
+
+
         table.getOnChangeListeners().add( new Consumer<Table>() {
             @Override
             public void accept( Table table ) {
@@ -97,8 +127,13 @@ public class TablesView extends HorizontalLayout {
                 } );
             }
         } );
-
-        return new Card( title, tableNumber, status, viewOrder );
+        Button deleteTable = new Button( "Delete Table" );
+        Card card = new Card( title, tableNumber, status, viewOrder, deleteTable );
+        deleteTable.addClickListener( e -> {
+            client.deleteTable( table.getId() );
+            remove( card );
+        } );
+        return card;
     }
 
 }

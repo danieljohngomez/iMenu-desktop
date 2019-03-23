@@ -12,18 +12,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.DocumentChange;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.EventListener;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreException;
 import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket.BlobWriteOption;
 import com.google.cloud.storage.Storage.PredefinedAcl;
@@ -32,6 +39,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.cloud.StorageClient;
+import com.imenu.desktop.spring.Notification.Type;
 import com.imenu.desktop.spring.Table.Status;
 
 @Component
@@ -158,6 +166,28 @@ final class DefaultFirebaseClient implements FirebaseClient {
     }
 
     @Override
+    public Table addTable( String name ) {
+        Table table = new Table( name, Status.VACANT );
+        try {
+            DocumentSnapshot documentReference = FirestoreClient.getFirestore().collection( "tables" )
+                    .add( toFirebaseModel( table ) ).get().get().get();
+            return toTable( documentReference );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return table;
+    }
+
+    @Override
+    public void deleteTable( String id ) {
+        try {
+            FirestoreClient.getFirestore().document( "tables/" + id ).delete().get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public List<Table> getTables() {
         try {
             return FirestoreClient.getFirestore().collection( "tables" ).get().get().getDocuments().stream()
@@ -279,6 +309,57 @@ final class DefaultFirebaseClient implements FirebaseClient {
         }
     }
 
+    @Override
+    public List<Notification> getNotifications() {
+        try {
+            return FirestoreClient.getFirestore().collection( "notifications" ).get().get().getDocuments().stream()
+                    .map( this::toNotification )
+                    .collect( Collectors.toList() );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void onNotification( Consumer<Notification> callback ) {
+        FirestoreClient.getFirestore().collection( "notifications" ).addSnapshotListener(
+                ( queryDocumentSnapshots, e ) -> {
+                    if ( queryDocumentSnapshots == null )
+                        return;
+                    for ( DocumentChange documentChange : queryDocumentSnapshots.getDocumentChanges() ) {
+                        callback.accept( toNotification( documentChange.getDocument() ) );
+                    }
+                } );
+    }
+
+    @Override
+    public void setNotification( Notification notification ) {
+        try {
+            FirestoreClient.getFirestore().document( "notifications/" + notification.getId() )
+                    .set( toFirebaseModel( notification ) ).get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    private Notification toNotification( DocumentSnapshot doc ) {
+        LocalDateTime time = ( doc.getUpdateTime().toDate() ).toInstant().atZone(
+                ZoneId.systemDefault() ).toLocalDateTime();
+        Boolean read = doc.getBoolean( "read" );
+        String id = doc.getId();
+        return new Notification( id, doc.getString( "table" ), Type.valueOf( doc.getString( "type" ) ), time,
+                read == null ? false : read );
+    }
+
+    private Map<String, Object> toFirebaseModel( Notification notification ) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "read", notification.isRead() );
+        object.put( "table", notification.getTable() );
+        object.put( "type", notification.getType().name() );
+        return object;
+    }
+
     private Map<String, Object> toFirebaseModel( RestaurantInfo info ) {
         Map<String, Object> object = new HashMap<>();
         object.put( "address", info.getAddress() );
@@ -322,6 +403,27 @@ final class DefaultFirebaseClient implements FirebaseClient {
         object.put( "image", food.getImage() );
         object.put( "name", food.getName() );
         object.put( "price", food.getPrice() );
+        return object;
+    }
+
+    private Map<String, Object> toFirebaseModel( Table table ) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "name", table.getName() );
+        object.put( "status", table.getStatus().name().toLowerCase() );
+        object.put( "customer", table.getCustomer() );
+        List<Map<String, Object>> foodOrders = new ArrayList<>();
+        for ( FoodOrder order : table.getOrders() ) {
+            foodOrders.add( toFirebaseModel( order ) );
+        }
+        object.put( "orders", foodOrders );
+        return object;
+    }
+
+    private Map<String, Object> toFirebaseModel( FoodOrder foodOrder ) {
+        Map<String, Object> object = new HashMap<>();
+        object.put( "name", foodOrder.getName() );
+        object.put( "quantity", foodOrder.getQuantity() );
+        object.put( "price", foodOrder.getPrice() );
         return object;
     }
 

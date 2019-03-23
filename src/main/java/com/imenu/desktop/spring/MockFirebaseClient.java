@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.google.cloud.storage.Blob;
@@ -63,6 +64,16 @@ class MockFirebaseClient implements FirebaseClient {
     }
 
     @Override
+    public Table addTable( String name ) {
+        return null;
+    }
+
+    @Override
+    public void deleteTable( String id ) {
+
+    }
+
+    @Override
     public List<Table> getTables() {
         Table table1 = new Table( "16", Status.OCCUPIED, ImmutableList.of(
             new FoodOrder( "Coffee", 100, 5 ),
@@ -118,6 +129,21 @@ class MockFirebaseClient implements FirebaseClient {
 
     @Override
     public void setInfo( RestaurantInfo info ) {
+
+    }
+
+    @Override
+    public List<Notification> getNotifications() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void onNotification( Consumer<Notification> callback ) {
+
+    }
+
+    @Override
+    public void setNotification( Notification notification ) {
 
     }
 
