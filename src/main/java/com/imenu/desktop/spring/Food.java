@@ -6,6 +6,8 @@ public class Food {
     private double price;
     private String id;
 
+    private int maxOrder = -1;
+
     public Food( String id, String name ) {
         this.id = id;
         this.name = name;
@@ -46,5 +48,13 @@ public class Food {
 
     public void setId( String id ) {
         this.id = id;
+    }
+
+    public int getMaxOrder() {
+        return maxOrder;
+    }
+
+    public void setMaxOrder( int maxOrder ) {
+        this.maxOrder = maxOrder;
     }
 }

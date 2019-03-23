@@ -44,6 +44,8 @@ public class FoodDialog extends Dialog {
 
     private TextField priceField;
 
+    private TextField maxOrderField;
+
     private Button saveButton;
 
     private Image image;
@@ -107,6 +109,10 @@ public class FoodDialog extends Dialog {
         priceField.setWidth( "100%" );
         priceField.setValue( String.format( "%.2f", food.getPrice() ) );
 
+        maxOrderField = new TextField( "Max Order" );
+        maxOrderField.setWidth( "100%" );
+        maxOrderField.setValue( "" + ( food.getMaxOrder() <= -1 ? "" : food.getMaxOrder() ) );
+
         saveButton = new Button( "Save", this::save );
         saveButton.setWidth( "100%" );
 
@@ -126,6 +132,7 @@ public class FoodDialog extends Dialog {
         layout.add( image );
         layout.add( nameField );
         layout.add( priceField );
+        layout.add( maxOrderField );
         layout.add( saveButton );
         if ( Strings.isNotBlank( food.getId() ) )
             layout.add( deleteButton );
@@ -137,6 +144,7 @@ public class FoodDialog extends Dialog {
     public void save( ClickEvent<Button> e ) {
         nameField.setInvalid( false );
         priceField.setInvalid( false );
+        maxOrderField.setInvalid( false );
 
         String name = nameField.getValue();
         if ( Strings.isBlank( name ) ) {
@@ -149,11 +157,22 @@ public class FoodDialog extends Dialog {
             priceField.setInvalid( true );
             priceField.setErrorMessage( "Required" );
         } else {
+            int maxOrderInt = -1;
+            try {
+                String maxOrder = maxOrderField.getValue();
+                if (!Strings.isBlank( maxOrder))
+                    maxOrderInt = Integer.parseInt( maxOrder );
+            } catch ( NumberFormatException ex ) {
+                maxOrderField.setInvalid( true );
+                maxOrderField.setErrorMessage( "Must be a valid value" );
+                return;
+            }
             try {
                 double priceDouble = Double.parseDouble( price );
                 food.setImage( image.getSrc() );
                 food.setName( name );
                 food.setPrice( priceDouble );
+                food.setMaxOrder( maxOrderInt );
                 String path = "menu/" + menuId + "/categories/" + categoryId + "/items";
                 if ( Strings.isNotBlank( food.getId() ) )
                     path += "/" + food.getId();

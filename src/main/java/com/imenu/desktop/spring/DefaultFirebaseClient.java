@@ -81,6 +81,9 @@ final class DefaultFirebaseClient implements FirebaseClient {
                             "items" ).get().get().getDocuments() ) {
                         Double price = item.getDouble( "price" );
                         Food food = new Food( item.getId(), item.getString( "name" ), price != null ? price : 0 );
+                        String maxOrder = item.getString( "maxOrder" );
+                        if (!Strings.isBlank( maxOrder ))
+                            food.setMaxOrder( Integer.parseInt( maxOrder ) );
                         food.setImage( item.getString( "image" ) );
                         category.getItems().add( food );
                     }
@@ -418,6 +421,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
         object.put( "image", food.getImage() );
         object.put( "name", food.getName() );
         object.put( "price", food.getPrice() );
+        object.put( "maxOrder", food.getMaxOrder() );
         return object;
     }
 
