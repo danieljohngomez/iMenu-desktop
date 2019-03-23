@@ -99,7 +99,8 @@ public class TablesView extends HorizontalLayout {
             order.setTable( table.getName() );
             order.setFoods( table.getOrders() );
             order.setCustomer( table.getCustomer() );
-            BillDialog billDialog = new BillDialog( order );
+            order.setTableId( table.getId() );
+            BillDialog billDialog = new BillDialog( order, client );
             billDialog.addBillOutListener( new ComponentEventListener<ClickEvent<Button>>() {
                 @Override
                 public void onComponentEvent( ClickEvent<Button> buttonClickEvent ) {

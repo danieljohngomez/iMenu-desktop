@@ -28,6 +28,8 @@ public interface FirebaseClient {
 
     List<Table> getTables();
 
+    void setTableOrder( String tableId, List<FoodOrder> foodOrders );
+
     List<Order> getOrders();
 
     Order addOrder( Order order );

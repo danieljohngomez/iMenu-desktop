@@ -85,6 +85,11 @@ class MockFirebaseClient implements FirebaseClient {
     }
 
     @Override
+    public void setTableOrder( String tableId, List<FoodOrder> foodOrders ) {
+
+    }
+
+    @Override
     public List<Order> getOrders() {
         return ImmutableList.of(
                 new Order( "123456", LocalDateTime.now(), "John Doe", "1",

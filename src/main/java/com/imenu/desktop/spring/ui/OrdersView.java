@@ -15,11 +15,14 @@ import com.vaadin.flow.router.Route;
 @Route( value = "orders", layout = MyAppLayoutRouterLayout.class )
 public class OrdersView extends VerticalLayout {
 
+    private final FirebaseClient client;
+
     Grid<Order> grid = new Grid<>();
 
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "MMMM dd, YYYY hh:mm a" );
 
     public OrdersView( FirebaseClient client ) {
+        this.client = client;
         grid.setHeightByRows( true );
         grid.addColumn( ( ValueProvider<Order, String> ) order -> order.getTime().format( dateTimeFormatter ) )
                 .setHeader( "Date and Time" );
@@ -35,7 +38,7 @@ public class OrdersView extends VerticalLayout {
     }
 
     void openBillDialog(Order order) {
-        BillDialog dialog = new BillDialog( order );
+        BillDialog dialog = new BillDialog( order, client );
         dialog.getBillOutButton().setVisible( false );
         dialog.open();
     }

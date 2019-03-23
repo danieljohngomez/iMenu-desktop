@@ -16,6 +16,8 @@ public class Order {
 
     private List<FoodOrder> foods;
 
+    private String tableId;
+
     public Order( String id ) {
         this.id = id;
         this.foods = new ArrayList<>();
@@ -76,5 +78,13 @@ public class Order {
 
     public void setFoods( List<FoodOrder> foods ) {
         this.foods = foods;
+    }
+
+    public void setTableId( String tableId ) {
+        this.tableId = tableId;
+    }
+
+    public String getTableId() {
+        return tableId;
     }
 }

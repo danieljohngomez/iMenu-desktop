@@ -31,9 +31,11 @@ import com.google.cloud.firestore.FirestoreException;
 import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.SetOptions;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket.BlobWriteOption;
 import com.google.cloud.storage.Storage.PredefinedAcl;
+import com.google.common.collect.ImmutableMap;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
@@ -204,6 +206,19 @@ final class DefaultFirebaseClient implements FirebaseClient {
             e.printStackTrace();
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public void setTableOrder( String tableId, List<FoodOrder> foodOrders ) {
+        List<Map<String, Object>> foods = foodOrders.stream().map( this::toFirebaseModel ).collect(
+                Collectors.toList() );
+        try {
+            FirestoreClient.getFirestore().document( "tables/" + tableId )
+                    .set( ImmutableMap.of( "orders", foods ), SetOptions.merge() )
+                    .get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
     }
 
     @Override
