@@ -53,4 +53,8 @@ public interface FirebaseClient {
     void onNotification( Consumer<Notification> callback );
 
     void setNotification( Notification notification );
+
+    Table getTable(String name);
+
+    void setTableStatus(String id, String status);
 }

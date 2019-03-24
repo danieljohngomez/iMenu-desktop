@@ -152,4 +152,14 @@ class MockFirebaseClient implements FirebaseClient {
 
     }
 
+    @Override
+    public Table getTable( String name ) {
+        return null;
+    }
+
+    @Override
+    public void setTableStatus( String id, String status ) {
+
+    }
+
 }

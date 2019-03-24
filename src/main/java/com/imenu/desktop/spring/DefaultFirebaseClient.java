@@ -15,22 +15,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
-import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.DocumentChange;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.EventListener;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.FirestoreException;
 import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.SetOptions;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket.BlobWriteOption;
@@ -81,9 +75,14 @@ final class DefaultFirebaseClient implements FirebaseClient {
                             "items" ).get().get().getDocuments() ) {
                         Double price = item.getDouble( "price" );
                         Food food = new Food( item.getId(), item.getString( "name" ), price != null ? price : 0 );
-                        String maxOrder = item.getString( "maxOrder" );
-                        if (!Strings.isBlank( maxOrder ))
-                            food.setMaxOrder( Integer.parseInt( maxOrder ) );
+                        Object maxOrder = item.get( "maxOrder" );
+                        if ( maxOrder instanceof String ) {
+                            if ( !Strings.isBlank( ( String ) maxOrder ) )
+                                food.setMaxOrder( Integer.parseInt( ( String ) maxOrder ) );
+                        } else if ( maxOrder instanceof Long ) {
+                            food.setMaxOrder( Math.toIntExact( ( Long ) maxOrder ) );
+                        }
+
                         food.setImage( item.getString( "image" ) );
                         category.getItems().add( food );
                     }
@@ -95,7 +94,7 @@ final class DefaultFirebaseClient implements FirebaseClient {
             e.printStackTrace();
         }
         this.menuList = menuList;
-        Collections.sort(this.menuList, Comparator.comparing(Menu::getName));
+        Collections.sort( this.menuList, Comparator.comparing( Menu::getName ) );
         return this.menuList;
     }
 
@@ -318,10 +317,10 @@ final class DefaultFirebaseClient implements FirebaseClient {
     }
 
     @Override
-    public void setInfo(RestaurantInfo info) {
+    public void setInfo( RestaurantInfo info ) {
         try {
             FirestoreClient.getFirestore().document(
-                    "restaurant/info" ).set(toFirebaseModel( info )).get();
+                    "restaurant/info" ).set( toFirebaseModel( info ) ).get();
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
         }
@@ -356,6 +355,32 @@ final class DefaultFirebaseClient implements FirebaseClient {
         try {
             FirestoreClient.getFirestore().document( "notifications/" + notification.getId() )
                     .set( toFirebaseModel( notification ) ).get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Table getTable( String name ) {
+        try {
+            List<QueryDocumentSnapshot> doc = FirestoreClient.getFirestore().collection( "tables" )
+                    .whereEqualTo( "name", name )
+                    .get()
+                    .get().getDocuments();
+            if ( doc.isEmpty() )
+                return null;
+            return toTable( doc.get( 0 ) );
+        } catch ( InterruptedException | ExecutionException e ) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public void setTableStatus( String id, String status ) {
+        try {
+            FirestoreClient.getFirestore().document( "tables/" + id )
+                    .set( ImmutableMap.of("status", status), SetOptions.merge() ).get();
         } catch ( InterruptedException | ExecutionException e ) {
             e.printStackTrace();
         }
